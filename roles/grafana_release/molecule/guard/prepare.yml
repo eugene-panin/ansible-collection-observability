@@ -1,0 +1,46 @@
+---
+- name: Serve a release whose checksum file does not mention its asset
+  hosts: all
+  become: true
+  vars:
+    _grafana_release_guard_dir: /srv/mirror/grafana/loki/releases/download/v9.9.9
+    _grafana_release_guard_arch: "{{ {'x86_64': 'amd64', 'aarch64': 'arm64'}[ansible_facts['architecture']] }}"
+  tasks:
+    - name: Ensure the mirror directory exists
+      ansible.builtin.file:
+        path: "{{ _grafana_release_guard_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Put an asset nothing vouches for on the mirror
+      ansible.builtin.copy:
+        content: not a real release
+        dest: "{{ _grafana_release_guard_dir }}/loki-linux-{{ _grafana_release_guard_arch }}.zip"
+        mode: '0644'
+
+    - name: Publish checksums for some other file only
+      ansible.builtin.copy:
+        content: "{{ '0' * 64 }}  some-other-file.zip\n"
+        dest: "{{ _grafana_release_guard_dir }}/SHA256SUMS"
+        mode: '0644'
+
+    - name: Serve the mirror
+      ansible.builtin.command:
+        argv:
+          - systemd-run
+          - --unit=release-mirror
+          - python3
+          - -m
+          - http.server
+          - "8000"
+          - --directory
+          - /srv/mirror
+        creates: /run/systemd/transient/release-mirror.service
+
+    - name: Wait for the mirror to answer
+      ansible.builtin.uri:
+        url: http://127.0.0.1:8000/grafana/loki/releases/download/v9.9.9/SHA256SUMS
+      register: _grafana_release_guard_up
+      until: _grafana_release_guard_up.status | default(0) == 200
+      retries: 15
+      delay: 1

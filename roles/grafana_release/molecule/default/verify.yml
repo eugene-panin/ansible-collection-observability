@@ -1,0 +1,28 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Read each installed version
+      ansible.builtin.command:
+        argv:
+          - "/usr/local/bin/{{ _grafana_release_test.product }}"
+          - --version
+      register: _grafana_release_test_versions
+      changed_when: false
+      loop: "{{ _grafana_release_test_new }}"
+      loop_control:
+        loop_var: _grafana_release_test
+        label: "{{ _grafana_release_test.product }}"
+
+    - name: Assert each binary is the upgraded release
+      ansible.builtin.assert:
+        that:
+          - (_grafana_release_test_result.stdout ~ ' ' ~ _grafana_release_test_result.stderr)
+            is search('version v?' ~ (_grafana_release_test_result._grafana_release_test.version | regex_escape) ~ '(\D|$)')
+        quiet: true
+      loop: "{{ _grafana_release_test_versions.results }}"
+      loop_control:
+        loop_var: _grafana_release_test_result
+        label: "{{ _grafana_release_test_result._grafana_release_test.product }}"

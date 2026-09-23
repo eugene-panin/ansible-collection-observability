@@ -1,0 +1,15 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  tasks:
+    - name: Install each product at the older release
+      ansible.builtin.include_role:
+        name: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}"
+      vars:
+        grafana_release_product: "{{ _grafana_release_test.product }}"
+        grafana_release_version: "{{ _grafana_release_test.version }}"
+      loop: "{{ _grafana_release_test_old }}"
+      loop_control:
+        loop_var: _grafana_release_test
+        label: "{{ _grafana_release_test.product }} {{ _grafana_release_test.version }}"

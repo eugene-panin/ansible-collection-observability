@@ -1,0 +1,47 @@
+---
+_grafana_release_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+
+_grafana_release_arch: "{{ _grafana_release_arch_map[ansible_facts['architecture']] | default('') }}"
+
+_grafana_release_products:
+  loki:
+    tag: "v{{ grafana_release_version }}"
+    asset: "loki-linux-{{ _grafana_release_arch }}.zip"
+    sums: SHA256SUMS
+    format: archive
+    member: "loki-linux-{{ _grafana_release_arch }}"
+  alloy:
+    tag: "v{{ grafana_release_version }}"
+    asset: "alloy-linux-{{ _grafana_release_arch }}.zip"
+    sums: SHA256SUMS
+    format: archive
+    member: "alloy-linux-{{ _grafana_release_arch }}"
+  tempo:
+    tag: "v{{ grafana_release_version }}"
+    asset: "tempo_{{ grafana_release_version }}_linux_{{ _grafana_release_arch }}.tar.gz"
+    sums: SHA256SUMS
+    format: archive
+    member: tempo
+  mimir:
+    tag: "mimir-{{ grafana_release_version }}"
+    asset: "mimir-linux-{{ _grafana_release_arch }}"
+    sums: "mimir-linux-{{ _grafana_release_arch }}-sha-256"
+    format: binary
+    member: ""
+
+_grafana_release_spec: "{{ _grafana_release_products[grafana_release_product] | default({}) }}"
+_grafana_release_download: >-
+  {{ grafana_release_base_url }}/grafana/{{ grafana_release_product }}/releases/download/{{ _grafana_release_spec.tag }}
+_grafana_release_archive: "{{ grafana_release_download_dir }}/{{ _grafana_release_spec.asset }}"
+_grafana_release_staging: "{{ grafana_release_download_dir }}/{{ grafana_release_product }}-{{ grafana_release_version }}"
+_grafana_release_binary: "{{ grafana_release_bin_dir }}/{{ grafana_release_product }}"
+
+_grafana_release_sums_lines: "{{ _grafana_release_sums.content | default('') | trim | split('\n') }}"
+_grafana_release_sha256: >-
+  {{ (_grafana_release_sums_lines | first).split() | first
+     if _grafana_release_sums_lines | length == 1 and (_grafana_release_sums_lines | first).split() | length == 1
+     else (_grafana_release_sums_lines
+           | select('search', '\s\*?' ~ (_grafana_release_spec.asset | regex_escape) ~ '$')
+           | first | default('-')).split() | first }}

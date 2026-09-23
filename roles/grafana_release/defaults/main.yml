@@ -1,0 +1,6 @@
+---
+grafana_release_product: ""
+grafana_release_version: ""
+grafana_release_bin_dir: /usr/local/bin
+grafana_release_download_dir: /var/cache/grafana-releases
+grafana_release_base_url: https://github.com

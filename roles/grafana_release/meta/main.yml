@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  role_name: grafana_release
+  namespace: eugene_panin
+  author: Evgenii Panin
+  description: Install a Grafana Labs binary from its GitHub release, verified against the published checksum
+  license: MIT
+  min_ansible_version: "2.19"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+    - name: Debian
+      versions:
+        - bookworm
+  galaxy_tags:
+    - grafana
+    - loki
+    - mimir
+    - tempo
+dependencies: []
+allow_duplicates: true

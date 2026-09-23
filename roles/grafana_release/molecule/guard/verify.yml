@@ -1,0 +1,16 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+    - name: Look for the binary
+      ansible.builtin.stat:
+        path: /usr/local/bin/loki
+      register: _grafana_release_guard_binary
+
+    - name: Assert nothing was installed
+      ansible.builtin.assert:
+        that:
+          - not _grafana_release_guard_binary.stat.exists
+        quiet: true

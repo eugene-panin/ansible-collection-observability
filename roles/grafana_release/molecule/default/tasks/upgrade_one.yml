@@ -1,0 +1,13 @@
+---
+- name: Upgrade one product
+  ansible.builtin.include_role:
+    name: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}"
+  vars:
+    grafana_release_product: "{{ _grafana_release_test.product }}"
+    grafana_release_version: "{{ _grafana_release_test.version }}"
+
+- name: Assert the role told its caller the binary changed
+  ansible.builtin.assert:
+    that:
+      - grafana_release_changed | bool
+    quiet: true

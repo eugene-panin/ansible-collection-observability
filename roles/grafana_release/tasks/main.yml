@@ -1,0 +1,118 @@
+---
+- name: Validate role inputs
+  ansible.builtin.assert:
+    that:
+      - grafana_release_product in _grafana_release_products
+      - grafana_release_version | length > 0
+      - _grafana_release_arch | length > 0
+    fail_msg: >-
+      grafana_release_product must be one of
+      {{ _grafana_release_products.keys() | list | join(', ') }},
+      grafana_release_version is required, and
+      {{ ansible_facts['architecture'] }} must be one of
+      {{ _grafana_release_arch_map.keys() | list | join(', ') }}
+    quiet: true
+
+- name: Read the installed version
+  ansible.builtin.command:
+    argv:
+      - "{{ _grafana_release_binary }}"
+      - --version
+  register: _grafana_release_installed
+  changed_when: false
+  check_mode: false
+  failed_when: false
+
+- name: Decide whether the wanted version is already in place
+  ansible.builtin.set_fact:
+    _grafana_release_present: >-
+      {{ _grafana_release_installed.rc | default(1) == 0
+         and (_grafana_release_installed.stdout ~ ' ' ~ _grafana_release_installed.stderr)
+             is search(_grafana_release_version_pattern) }}
+  vars:
+    _grafana_release_version_pattern: "version v?{{ grafana_release_version | regex_escape }}(\\D|$)"
+
+- name: Tell the calling role whether the binary is about to change
+  ansible.builtin.set_fact:
+    grafana_release_changed: "{{ not _grafana_release_present | bool }}"
+
+- name: Ensure the download directory exists
+  ansible.builtin.file:
+    path: "{{ grafana_release_download_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: not _grafana_release_present | bool
+
+- name: Fetch the published checksums
+  ansible.builtin.uri:
+    url: "{{ _grafana_release_download }}/{{ _grafana_release_spec.sums }}"
+    return_content: true
+  register: _grafana_release_sums
+  when:
+    - not _grafana_release_present | bool
+    - not ansible_check_mode
+
+- name: Refuse to install anything the checksums do not vouch for
+  ansible.builtin.assert:
+    that:
+      - _grafana_release_sha256 is match('^[0-9a-f]{64}$')
+    fail_msg: >-
+      No SHA-256 for {{ _grafana_release_spec.asset }} in
+      {{ _grafana_release_download }}/{{ _grafana_release_spec.sums }}
+    quiet: true
+  when:
+    - not _grafana_release_present | bool
+    - not ansible_check_mode
+
+- name: Download the release, verified against its checksum
+  ansible.builtin.get_url:
+    url: "{{ _grafana_release_download }}/{{ _grafana_release_spec.asset }}"
+    dest: "{{ _grafana_release_archive }}"
+    checksum: "sha256:{{ _grafana_release_sha256 }}"
+    owner: root
+    group: root
+    mode: '0644'
+  when:
+    - not _grafana_release_present | bool
+    - not ansible_check_mode
+
+- name: Ensure the staging directory exists
+  ansible.builtin.file:
+    path: "{{ _grafana_release_staging }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when:
+    - not _grafana_release_present | bool
+    - not ansible_check_mode
+    - _grafana_release_spec.format == 'archive'
+
+- name: Unpack the archive
+  ansible.builtin.unarchive:
+    src: "{{ _grafana_release_archive }}"
+    dest: "{{ _grafana_release_staging }}"
+    remote_src: true
+    owner: root
+    group: root
+  when:
+    - not _grafana_release_present | bool
+    - not ansible_check_mode
+    - _grafana_release_spec.format == 'archive'
+
+- name: Install the binary
+  ansible.builtin.copy:
+    src: >-
+      {{ _grafana_release_staging ~ '/' ~ _grafana_release_spec.member
+         if _grafana_release_spec.format == 'archive' else _grafana_release_archive }}
+    dest: "{{ _grafana_release_binary }}"
+    remote_src: true
+    owner: root
+    group: root
+    mode: '0755'
+  register: grafana_release_result
+  when:
+    - not _grafana_release_present | bool
+    - not ansible_check_mode

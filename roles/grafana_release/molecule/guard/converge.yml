@@ -1,0 +1,24 @@
+---
+- name: Ask for a release the checksums do not cover
+  hosts: all
+  become: true
+  tasks:
+    - name: Apply the role and expect it to stop
+      block:
+        - name: Apply the role
+          ansible.builtin.include_role:
+            name: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}"
+          vars:
+            grafana_release_product: loki
+            grafana_release_version: 9.9.9
+            grafana_release_base_url: http://127.0.0.1:8000
+
+        - name: The role must not get this far
+          ansible.builtin.fail:
+            msg: the role installed an asset its checksums do not mention
+      rescue:
+        - name: Assert it stopped for the right reason
+          ansible.builtin.assert:
+            that:
+              - "'No SHA-256 for' in ansible_failed_result.msg | default('')"
+            quiet: true

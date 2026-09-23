@@ -1,0 +1,28 @@
+---
+namespace: eugene_panin
+name: observability
+version: 0.1.0
+readme: README.md
+authors:
+  - Evgenii Panin <e.panin@gmail.com>
+description: >-
+  Alloy, Loki, Mimir, Tempo and Grafana on plain hosts with systemd: agents on
+  every host, backends on local disk or S3, Grafana wired to all three.
+license:
+  - MIT
+repository: https://github.com/eugene-panin/ansible-collection-observability
+issues: https://github.com/eugene-panin/ansible-collection-observability/issues
+tags:
+  - monitoring
+  - observability
+  - grafana
+  - loki
+  - mimir
+dependencies:
+  community.general: ">=10.0.0"
+build_ignore:
+  - .github
+  - .gitignore
+  - .ansible-lint
+  - .yamllint
+  - Makefile

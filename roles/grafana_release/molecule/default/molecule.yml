@@ -1,0 +1,54 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: molecule/default/requirements.yml
+driver:
+  name: docker
+platforms:
+  - name: instance-grafana-release
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2404}-ansible:latest"
+    command: ""
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callback_result_format: yaml
+  inventory:
+    group_vars:
+      all:
+        _grafana_release_test_old:
+          - {product: loki, version: 3.7.7}
+          - {product: mimir, version: 3.2.0}
+          - {product: tempo, version: 3.0.2}
+          - {product: alloy, version: 1.19.0}
+        _grafana_release_test_new:
+          - {product: loki, version: 3.7.8}
+          - {product: mimir, version: 3.2.1}
+          - {product: tempo, version: 3.0.3}
+          - {product: alloy, version: 1.19.2}
+  playbooks:
+    prepare: prepare.yml
+    converge: converge.yml
+    side_effect: side_effect.yml
+    verify: verify.yml
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+    - dependency
+    - syntax
+    - create
+    - prepare
+    - check
+    - converge
+    - idempotence
+    - check
+    - side_effect
+    - verify
+    - destroy

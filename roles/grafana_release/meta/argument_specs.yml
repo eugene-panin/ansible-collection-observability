@@ -1,0 +1,35 @@
+---
+argument_specs:
+  main:
+    short_description: Install a Grafana Labs binary
+    description:
+      - Downloads Loki, Mimir, Tempo or Alloy from its GitHub release, checks it
+        against the SHA-256 published with that release and installs the
+        binary.
+      - Understands both ways the checksums are published, a shared SHA256SUMS
+        file and one file per asset holding just the hash, and refuses to
+        install when it finds no checksum for the asset.
+      - Compares the installed version with the wanted one, so a version bump
+        upgrades in place. Sets grafana_release_changed for the calling role.
+    options:
+      grafana_release_product:
+        type: str
+        required: true
+        choices: [loki, mimir, tempo, alloy]
+        description: Which product to install.
+      grafana_release_version:
+        type: str
+        required: true
+        description: Exact version, without a leading v.
+      grafana_release_bin_dir:
+        type: str
+        default: /usr/local/bin
+        description: Where the binary is installed.
+      grafana_release_download_dir:
+        type: str
+        default: /var/cache/grafana-releases
+        description: Where downloads and unpacked archives are kept.
+      grafana_release_base_url:
+        type: str
+        default: https://github.com
+        description: Where the grafana/<product> repositories are served from, for a mirror.

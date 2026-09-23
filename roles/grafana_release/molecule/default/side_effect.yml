@@ -1,0 +1,11 @@
+---
+- name: Upgrade every product
+  hosts: all
+  become: true
+  tasks:
+    - name: Upgrade each product to the newer release
+      ansible.builtin.include_tasks: tasks/upgrade_one.yml
+      loop: "{{ _grafana_release_test_new }}"
+      loop_control:
+        loop_var: _grafana_release_test
+        label: "{{ _grafana_release_test.product }} {{ _grafana_release_test.version }}"
