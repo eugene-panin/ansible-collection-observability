@@ -1,0 +1,24 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=Mimir
+Documentation=https://grafana.com/docs/mimir/latest/
+Wants=network-online.target
+After=network-online.target
+ConditionFileNotEmpty={{ mimir_config_dir }}/mimir.yml
+
+[Service]
+User={{ mimir_user }}
+Group={{ mimir_group }}
+WorkingDirectory={{ mimir_data_dir }}
+ExecStart={{ mimir_bin_dir }}/mimir -config.file={{ mimir_config_dir }}/mimir.yml
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths={{ mimir_data_dir }}
+
+[Install]
+WantedBy=multi-user.target

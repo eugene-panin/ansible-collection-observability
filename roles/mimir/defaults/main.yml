@@ -1,0 +1,24 @@
+---
+mimir_version: 3.2.1
+mimir_bind_address: ""
+mimir_http_port: 9009
+mimir_grpc_port: 9095
+
+mimir_bin_dir: /usr/local/bin
+mimir_user: mimir
+mimir_group: mimir
+mimir_config_dir: /etc/mimir
+mimir_data_dir: /var/lib/mimir
+
+mimir_storage: filesystem
+mimir_s3_endpoint: ""
+mimir_s3_bucket: ""
+mimir_s3_region: us-east-1
+mimir_s3_access_key: ""
+mimir_s3_secret_key: ""
+mimir_s3_insecure: false
+
+mimir_retention_period: 0s
+mimir_multitenancy: false
+
+mimir_extra_config: {}

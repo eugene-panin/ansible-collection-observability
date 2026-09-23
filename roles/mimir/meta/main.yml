@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: mimir
+  namespace: eugene_panin
+  author: Evgenii Panin
+  description: Mimir in a single process, on local disk or S3
+  license: MIT
+  min_ansible_version: "2.19"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+    - name: Debian
+      versions:
+        - bookworm
+  galaxy_tags:
+    - mimir
+    - metrics
+    - grafana
+dependencies: []

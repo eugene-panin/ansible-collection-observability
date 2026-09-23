@@ -1,0 +1,67 @@
+---
+- name: Take a timestamp for the test sample
+  ansible.builtin.command:
+    argv:
+      - date
+      - +%s%N
+  register: _mimir_test_now
+  changed_when: false
+
+- name: Push a sample to Mimir over OTLP
+  ansible.builtin.uri:
+    url: "{{ _mimir_test_api }}/otlp/v1/metrics"
+    method: POST
+    body_format: json
+    body:
+      resourceMetrics:
+        - resource:
+            attributes:
+              - key: service.name
+                value:
+                  stringValue: molecule
+          scopeMetrics:
+            - metrics:
+                - name: molecule_roundtrip
+                  gauge:
+                    dataPoints:
+                      - asDouble: 42
+                        timeUnixNano: "{{ _mimir_test_now.stdout }}"
+                        attributes:
+                          - key: run
+                            value:
+                              stringValue: "{{ _mimir_test_now.stdout }}"
+    status_code: [200]
+
+- name: Flush the in-memory series to storage
+  ansible.builtin.uri:
+    url: "{{ _mimir_test_api }}/ingester/flush?wait=true"
+    method: POST
+    status_code: [200, 204]
+    timeout: 120
+
+- name: Restart Mimir
+  ansible.builtin.systemd_service:
+    name: mimir
+    state: restarted
+
+- name: Wait until Mimir is ready again
+  ansible.builtin.uri:
+    url: "{{ _mimir_test_api }}/ready"
+  register: _mimir_test_ready
+  until: _mimir_test_ready.status | default(0) == 200
+  retries: 60
+  delay: 2
+
+- name: Read the sample back after the restart
+  ansible.builtin.uri:
+    timeout: 10
+    url: "{{ _mimir_test_api }}/prometheus/api/v1/query?query={{ _mimir_test_promql | urlencode }}&time={{ _mimir_test_at }}"
+    return_content: true
+  vars:
+    _mimir_test_promql: 'molecule_roundtrip{run="{{ _mimir_test_now.stdout }}"}'
+    _mimir_test_at: "{{ (_mimir_test_now.stdout | int / 1000000000) | round(3) }}"
+  register: _mimir_test_query
+  until: >-
+    _mimir_test_query.json.data.result | default([]) | map(attribute='value') | map('last') | list == ['42']
+  retries: 30
+  delay: 2

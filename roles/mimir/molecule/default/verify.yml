@@ -1,0 +1,33 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Ask the running Mimir which version it is
+      ansible.builtin.uri:
+        url: "{{ _mimir_test_api }}/api/v1/status/buildinfo"
+        return_content: true
+      register: _mimir_test_build
+
+    - name: Assert the upgrade restarted Mimir onto the new binary
+      ansible.builtin.assert:
+        that:
+          - _mimir_test_build.json.data.version == '3.2.1'
+        quiet: true
+
+    - name: Push, flush, restart and read back
+      ansible.builtin.include_tasks: tasks/roundtrip.yml
+
+    - name: Find the shipped blocks on disk
+      ansible.builtin.find:
+        paths: /var/lib/mimir/data/blocks
+        patterns: meta.json
+        recurse: true
+      register: _mimir_test_blocks
+
+    - name: Assert blocks were written to the filesystem storage
+      ansible.builtin.assert:
+        that:
+          - _mimir_test_blocks.matched > 0
+        quiet: true

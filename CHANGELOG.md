@@ -15,3 +15,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
 - `loki` role: Loki with all components in one process, chunks and the TSDB
   index on local disk or in an S3-compatible bucket. No authentication or TLS
   of its own; bind it to a private address.
+- `mimir` role: Mimir with all components in one process, blocks on local disk
+  or in an S3-compatible bucket, Prometheus remote write and OTLP in, the
+  Prometheus query API out. Points its internal query path at the bind
+  address, which Mimir otherwise dials on 127.0.0.1.

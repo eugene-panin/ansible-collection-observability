@@ -1,0 +1,21 @@
+---
+- name: Render the configuration
+  ansible.builtin.copy:
+    content: "{{ _mimir_rendered | to_nice_yaml(indent=2, sort_keys=false) }}"
+    dest: "{{ mimir_config_dir }}/mimir.yml"
+    owner: root
+    group: "{{ mimir_group }}"
+    mode: '0640'
+  no_log: "{{ mimir_storage == 's3' }}"
+  notify: "restart mimir"
+
+- name: Install the systemd unit
+  ansible.builtin.template:
+    src: mimir.service.j2
+    dest: /etc/systemd/system/mimir.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - "reload systemd"
+    - "restart mimir"

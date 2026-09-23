@@ -41,6 +41,7 @@
 
 - name: Read the line back after the restart
   ansible.builtin.uri:
+    timeout: 10
     url: >-
       {{ _loki_test_api }}/loki/api/v1/query_range?query={{ '{job="molecule"}' | urlencode }}&start={{ _loki_test_now.stdout | int - 3600000000000 }}&limit=100
     return_content: true

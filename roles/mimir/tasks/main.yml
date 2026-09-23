@@ -1,0 +1,26 @@
+---
+- name: Validate role inputs
+  ansible.builtin.assert:
+    that:
+      - mimir_bind_address | length > 0
+      - mimir_storage in ['filesystem', 's3']
+      - mimir_storage != 's3' or (mimir_s3_endpoint | length > 0 and mimir_s3_bucket | length > 0)
+    fail_msg: >-
+      mimir_bind_address is required, mimir_storage is filesystem or s3, and s3
+      needs mimir_s3_endpoint and mimir_s3_bucket
+    quiet: true
+
+- name: Install
+  ansible.builtin.include_tasks: install.yml
+  tags: [mimir, install]
+
+- name: Configure
+  ansible.builtin.include_tasks: configure.yml
+  tags: [mimir, config]
+
+- name: Apply pending restarts before talking to Mimir
+  ansible.builtin.meta: flush_handlers
+
+- name: Manage service
+  ansible.builtin.include_tasks: service.yml
+  tags: [mimir, service]

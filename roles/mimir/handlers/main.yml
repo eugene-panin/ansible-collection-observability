@@ -1,0 +1,12 @@
+---
+- name: Reload the systemd daemon
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+  listen: "reload systemd"
+
+- name: Restart mimir
+  ansible.builtin.systemd_service:
+    name: mimir
+    state: restarted
+  when: _mimir_live | bool
+  listen: "restart mimir"

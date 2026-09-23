@@ -1,0 +1,32 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Push, flush, restart and read back
+      ansible.builtin.include_tasks: ../default/tasks/roundtrip.yml
+
+    - name: List the bucket
+      ansible.builtin.uri:
+        url: http://127.0.0.1:9000/mimir?list-type=2
+        return_content: true
+      register: _mimir_test_bucket
+
+    - name: Assert blocks were shipped to S3
+      ansible.builtin.assert:
+        that:
+          - _mimir_test_bucket.content is search('<Key>blocks/[^<]*/meta\.json</Key>')
+        quiet: true
+
+    - name: Find anything in the local filesystem storage
+      ansible.builtin.find:
+        paths: /var/lib/mimir/data
+        recurse: true
+      register: _mimir_test_local
+
+    - name: Assert nothing went to local object storage
+      ansible.builtin.assert:
+        that:
+          - _mimir_test_local.matched == 0
+        quiet: true

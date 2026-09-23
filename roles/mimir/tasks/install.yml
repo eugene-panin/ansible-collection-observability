@@ -1,0 +1,51 @@
+---
+- name: Check whether mimir is already installed
+  ansible.builtin.stat:
+    path: "{{ mimir_bin_dir }}/mimir"
+  register: _mimir_binary_stat
+  check_mode: false
+
+- name: Ensure the mimir group exists
+  ansible.builtin.group:
+    name: "{{ mimir_group }}"
+    system: true
+    state: present
+
+- name: Ensure the mimir user exists
+  ansible.builtin.user:
+    name: "{{ mimir_user }}"
+    group: "{{ mimir_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ mimir_data_dir }}"
+    create_home: false
+    state: present
+
+- name: Install the mimir binary
+  ansible.builtin.include_role:
+    name: eugene_panin.observability.grafana_release
+  vars:
+    grafana_release_product: mimir
+    grafana_release_version: "{{ mimir_version }}"
+    grafana_release_bin_dir: "{{ mimir_bin_dir }}"
+
+- name: Queue a restart when the binary is about to change
+  ansible.builtin.debug:
+    msg: "mimir {{ mimir_version }}"
+  changed_when: grafana_release_changed | bool
+  notify: "restart mimir"
+
+- name: Ensure the mimir directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ mimir_user }}"
+    group: "{{ mimir_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ mimir_config_dir }}"
+      mode: '0750'
+    - path: "{{ mimir_data_dir }}"
+      mode: '0750'
+  loop_control:
+    label: "{{ item.path }}"

@@ -1,0 +1,72 @@
+---
+_mimir_live: "{{ not (ansible_check_mode and not _mimir_binary_stat.stat.exists | default(false)) }}"
+_mimir_api: "http://{{ mimir_bind_address }}:{{ mimir_http_port }}"
+
+_mimir_storage_filesystem:
+  backend: filesystem
+  filesystem:
+    dir: "{{ mimir_data_dir }}/data"
+
+_mimir_storage_s3:
+  backend: s3
+  s3:
+    endpoint: "{{ mimir_s3_endpoint }}"
+    bucket_name: "{{ mimir_s3_bucket }}"
+    region: "{{ mimir_s3_region }}"
+    access_key_id: "{{ mimir_s3_access_key }}"
+    secret_access_key: "{{ mimir_s3_secret_key }}"
+    insecure: "{{ mimir_s3_insecure | bool }}"
+
+_mimir_ring:
+  instance_addr: "{{ mimir_bind_address }}"
+  kvstore:
+    store: memberlist
+
+_mimir_config:
+  target: all
+  multitenancy_enabled: "{{ mimir_multitenancy | bool }}"
+  server:
+    http_listen_address: "{{ mimir_bind_address }}"
+    http_listen_port: "{{ mimir_http_port | int }}"
+    grpc_listen_address: "{{ mimir_bind_address }}"
+    grpc_listen_port: "{{ mimir_grpc_port | int }}"
+    log_level: info
+  common:
+    storage: "{{ _mimir_storage_s3 if mimir_storage == 's3' else _mimir_storage_filesystem }}"
+  blocks_storage:
+    storage_prefix: blocks
+    tsdb:
+      dir: "{{ mimir_data_dir }}/tsdb"
+    bucket_store:
+      sync_dir: "{{ mimir_data_dir }}/tsdb-sync"
+  ruler_storage:
+    storage_prefix: ruler
+  alertmanager_storage:
+    storage_prefix: alertmanager
+  compactor:
+    data_dir: "{{ mimir_data_dir }}/compactor"
+    sharding_ring:
+      kvstore:
+        store: memberlist
+  distributor:
+    ring: "{{ _mimir_ring }}"
+  ingester:
+    ring: "{{ _mimir_ring | combine({'replication_factor': 1}) }}"
+  store_gateway:
+    sharding_ring:
+      replication_factor: 1
+  memberlist:
+    bind_addr:
+      - "{{ mimir_bind_address }}"
+  limits:
+    compactor_blocks_retention_period: "{{ mimir_retention_period }}"
+  frontend:
+    scheduler_address: "{{ mimir_bind_address }}:{{ mimir_grpc_port }}"
+  frontend_worker:
+    scheduler_address: "{{ mimir_bind_address }}:{{ mimir_grpc_port }}"
+  activity_tracker:
+    filepath: "{{ mimir_data_dir }}/metrics-activity.log"
+  usage_stats:
+    enabled: false
+
+_mimir_rendered: "{{ _mimir_config | combine(mimir_extra_config, recursive=True) }}"

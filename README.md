@@ -14,7 +14,7 @@ works just as well pointed at Grafana Cloud or someone else's Loki.
 |---|---|---|
 | [`grafana_release`](roles/grafana_release/README.md) | done | Installs a Grafana Labs binary, verified against its published checksum |
 | [`loki`](roles/loki/README.md) | done | Logs, in one process, on local disk or S3 |
-| `mimir` | not yet | Metrics |
+| [`mimir`](roles/mimir/README.md) | done | Metrics, in one process, on local disk or S3 |
 | `tempo` | not yet | Traces |
 | `grafana` | not yet | Dashboards, with Loki, Mimir and Tempo as data sources |
 | `alloy` | not yet | Agent that collects from a host and ships to the backends |

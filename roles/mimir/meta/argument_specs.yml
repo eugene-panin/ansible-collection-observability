@@ -1,0 +1,89 @@
+---
+argument_specs:
+  main:
+    short_description: Run Mimir
+    description:
+      - Installs Mimir through grafana_release, renders its configuration and
+        manages the systemd unit. All components run in one process.
+      - Blocks, rules and alertmanager state go to local disk or to one
+        S3-compatible bucket, under separate prefixes.
+      - Accepts Prometheus remote write and OTLP over HTTP, and answers the
+        Prometheus query API under /prometheus.
+    options:
+      mimir_version:
+        type: str
+        default: 3.2.1
+        description: Exact version to install.
+      mimir_bind_address:
+        type: str
+        required: true
+        description: Address the HTTP and gRPC servers bind to, and the internal components use.
+      mimir_http_port:
+        type: int
+        default: 9009
+        description: HTTP port, for writes, queries and readiness.
+      mimir_grpc_port:
+        type: int
+        default: 9095
+        description: gRPC port.
+      mimir_bin_dir:
+        type: str
+        default: /usr/local/bin
+        description: Where the binary is installed.
+      mimir_user:
+        type: str
+        default: mimir
+        description: System user Mimir runs as.
+      mimir_group:
+        type: str
+        default: mimir
+        description: Group Mimir runs as.
+      mimir_config_dir:
+        type: str
+        default: /etc/mimir
+        description: Configuration directory.
+      mimir_data_dir:
+        type: str
+        default: /var/lib/mimir
+        description: Data directory; holds the object storage too when it is the filesystem.
+      mimir_storage:
+        type: str
+        default: filesystem
+        choices: [filesystem, s3]
+        description: Where blocks, rules and alertmanager state are stored.
+      mimir_s3_endpoint:
+        type: str
+        default: ""
+        description: S3 endpoint, host and optional port, no scheme.
+      mimir_s3_bucket:
+        type: str
+        default: ""
+        description: Bucket name. It must exist.
+      mimir_s3_region:
+        type: str
+        default: us-east-1
+        description: Bucket region.
+      mimir_s3_access_key:
+        type: str
+        default: ""
+        description: Access key id.
+      mimir_s3_secret_key:
+        type: str
+        default: ""
+        description: Secret access key.
+      mimir_s3_insecure:
+        type: bool
+        default: false
+        description: Talk plain HTTP to the endpoint.
+      mimir_retention_period:
+        type: str
+        default: 0s
+        description: How long blocks are kept; 0s keeps them forever.
+      mimir_multitenancy:
+        type: bool
+        default: false
+        description: Multi-tenancy; when on, every request needs X-Scope-OrgID.
+      mimir_extra_config:
+        type: dict
+        default: {}
+        description: Merged into the rendered configuration, recursively, last.
