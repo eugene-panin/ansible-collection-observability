@@ -1,0 +1,26 @@
+---
+loki_version: 3.7.8
+loki_bind_address: ""
+loki_http_port: 3100
+loki_grpc_port: 9096
+
+loki_bin_dir: /usr/local/bin
+loki_user: loki
+loki_group: loki
+loki_config_dir: /etc/loki
+loki_data_dir: /var/lib/loki
+
+loki_storage: filesystem
+loki_s3_endpoint: ""
+loki_s3_bucket: ""
+loki_s3_region: us-east-1
+loki_s3_access_key: ""
+loki_s3_secret_key: ""
+loki_s3_insecure: false
+loki_s3_force_path_style: true
+
+loki_schema_from: "2024-01-01"
+loki_retention_period: 744h
+loki_auth_enabled: false
+
+loki_extra_config: {}

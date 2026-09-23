@@ -1,0 +1,33 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Push, flush, restart and read back
+      ansible.builtin.include_tasks: ../default/tasks/roundtrip.yml
+
+    - name: List the bucket
+      ansible.builtin.uri:
+        url: http://127.0.0.1:9000/loki?list-type=2
+        return_content: true
+      register: _loki_test_bucket
+
+    - name: Assert the chunks and the index went to S3
+      ansible.builtin.assert:
+        that:
+          - _loki_test_bucket.content is search('<Key>[^<]*chunks|<Key>fake/')
+          - _loki_test_bucket.content is search('<Key>[^<]*index_')
+        quiet: true
+
+    - name: Find anything written to the local chunks directory
+      ansible.builtin.find:
+        paths: /var/lib/loki/chunks
+        recurse: true
+      register: _loki_test_local_chunks
+
+    - name: Assert nothing went to local chunk storage
+      ansible.builtin.assert:
+        that:
+          - _loki_test_local_chunks.matched == 0
+        quiet: true

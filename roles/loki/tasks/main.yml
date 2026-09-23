@@ -1,0 +1,26 @@
+---
+- name: Validate role inputs
+  ansible.builtin.assert:
+    that:
+      - loki_bind_address | length > 0
+      - loki_storage in ['filesystem', 's3']
+      - loki_storage != 's3' or (loki_s3_endpoint | length > 0 and loki_s3_bucket | length > 0)
+    fail_msg: >-
+      loki_bind_address is required, loki_storage is filesystem or s3, and s3
+      needs loki_s3_endpoint and loki_s3_bucket
+    quiet: true
+
+- name: Install
+  ansible.builtin.include_tasks: install.yml
+  tags: [loki, install]
+
+- name: Configure
+  ansible.builtin.include_tasks: configure.yml
+  tags: [loki, config]
+
+- name: Apply pending restarts before talking to Loki
+  ansible.builtin.meta: flush_handlers
+
+- name: Manage service
+  ansible.builtin.include_tasks: service.yml
+  tags: [loki, service]

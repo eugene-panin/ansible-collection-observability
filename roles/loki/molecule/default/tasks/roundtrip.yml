@@ -1,0 +1,52 @@
+---
+- name: Take a timestamp for the test line
+  ansible.builtin.command:
+    argv:
+      - date
+      - +%s%N
+  register: _loki_test_now
+  changed_when: false
+
+- name: Push a line to Loki
+  ansible.builtin.uri:
+    url: "{{ _loki_test_api }}/loki/api/v1/push"
+    method: POST
+    body_format: json
+    body:
+      streams:
+        - stream:
+            job: molecule
+          values:
+            - ["{{ _loki_test_now.stdout }}", "roundtrip {{ _loki_test_now.stdout }}"]
+    status_code: [204]
+
+- name: Flush the in-memory chunks to storage
+  ansible.builtin.uri:
+    url: "{{ _loki_test_api }}/flush"
+    method: POST
+    status_code: [204]
+
+- name: Restart Loki
+  ansible.builtin.systemd_service:
+    name: loki
+    state: restarted
+
+- name: Wait until Loki is ready again
+  ansible.builtin.uri:
+    url: "{{ _loki_test_api }}/ready"
+  register: _loki_test_ready
+  until: _loki_test_ready.status | default(0) == 200
+  retries: 60
+  delay: 2
+
+- name: Read the line back after the restart
+  ansible.builtin.uri:
+    url: >-
+      {{ _loki_test_api }}/loki/api/v1/query_range?query={{ '{job="molecule"}' | urlencode }}&start={{ _loki_test_now.stdout | int - 3600000000000 }}&limit=100
+    return_content: true
+  register: _loki_test_query
+  until: >-
+    ('roundtrip ' ~ _loki_test_now.stdout) in
+    (_loki_test_query.json.data.result | default([]) | map(attribute='values') | flatten(levels=1) | map('last') | list)
+  retries: 30
+  delay: 2

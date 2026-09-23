@@ -65,11 +65,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        role: [grafana_release]
+        role: [grafana_release, loki]
         distro: [ubuntu2404, ubuntu2204, debian12]
         ansible_core: [latest]
         include:
           - role: grafana_release
+            distro: ubuntu2404
+            ansible_core: '2.19'
+          - role: loki
             distro: ubuntu2404
             ansible_core: '2.19'
     env:

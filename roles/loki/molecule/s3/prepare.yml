@@ -1,0 +1,43 @@
+---
+- name: Run an S3 endpoint for Loki to store into
+  hosts: all
+  become: true
+  tasks:
+    - name: Ensure the Python venv module is installed
+      ansible.builtin.apt:
+        name: python3-venv
+        state: present
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install moto, an S3 API emulator, into a venv
+      ansible.builtin.pip:
+        name: "moto[server]"
+        virtualenv: /opt/moto
+        virtualenv_command: python3 -m venv
+
+    - name: Serve S3 on 127.0.0.1:9000
+      ansible.builtin.command:
+        argv:
+          - systemd-run
+          - --unit=moto-s3
+          - /opt/moto/bin/moto_server
+          - -H
+          - 127.0.0.1
+          - -p
+          - "9000"
+        creates: /run/systemd/transient/moto-s3.service
+
+    - name: Wait for the S3 endpoint
+      ansible.builtin.uri:
+        url: http://127.0.0.1:9000/
+      register: _loki_test_s3_up
+      until: _loki_test_s3_up.status | default(0) == 200
+      retries: 30
+      delay: 1
+
+    - name: Create the bucket
+      ansible.builtin.uri:
+        url: http://127.0.0.1:9000/loki
+        method: PUT
+        status_code: [200]

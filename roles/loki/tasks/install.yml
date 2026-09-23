@@ -1,0 +1,72 @@
+---
+- name: Check whether loki is already installed
+  ansible.builtin.stat:
+    path: "{{ loki_bin_dir }}/loki"
+  register: _loki_binary_stat
+  check_mode: false
+
+- name: Ensure the loki group exists
+  ansible.builtin.group:
+    name: "{{ loki_group }}"
+    system: true
+    state: present
+
+- name: Ensure the loki user exists
+  ansible.builtin.user:
+    name: "{{ loki_user }}"
+    group: "{{ loki_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ loki_data_dir }}"
+    create_home: false
+    state: present
+
+- name: Refresh the apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_facts['os_family'] == 'Debian'
+  register: _loki_apt_cache
+  until: _loki_apt_cache is succeeded
+  retries: 30
+  delay: 10
+  changed_when: false
+  check_mode: false
+
+- name: Ensure unzip is installed
+  ansible.builtin.package:
+    name: unzip
+    state: present
+  register: _loki_unzip
+  until: _loki_unzip is succeeded
+  retries: 30
+  delay: 10
+
+- name: Install the loki binary
+  ansible.builtin.include_role:
+    name: eugene_panin.observability.grafana_release
+  vars:
+    grafana_release_product: loki
+    grafana_release_version: "{{ loki_version }}"
+    grafana_release_bin_dir: "{{ loki_bin_dir }}"
+
+- name: Queue a restart when the binary is about to change
+  ansible.builtin.debug:
+    msg: "loki {{ loki_version }}"
+  changed_when: grafana_release_changed | bool
+  notify: "restart loki"
+
+- name: Ensure the loki directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ loki_user }}"
+    group: "{{ loki_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ loki_config_dir }}"
+      mode: '0750'
+    - path: "{{ loki_data_dir }}"
+      mode: '0750'
+  loop_control:
+    label: "{{ item.path }}"

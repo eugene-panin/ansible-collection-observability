@@ -1,0 +1,18 @@
+---
+- name: Ensure loki is enabled and running
+  ansible.builtin.systemd_service:
+    name: loki
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: _loki_live | bool
+
+- name: Wait until Loki reports ready
+  ansible.builtin.uri:
+    url: "{{ _loki_api }}/ready"
+  register: _loki_ready
+  until: _loki_ready.status | default(0) == 200
+  retries: 60
+  delay: 2
+  when: _loki_live | bool
+  check_mode: false

@@ -1,0 +1,95 @@
+---
+argument_specs:
+  main:
+    short_description: Run Loki
+    description:
+      - Installs Loki through grafana_release, renders its configuration and
+        manages the systemd unit. All components run in one process.
+      - Chunks and the TSDB index go to local disk or to an S3-compatible
+        bucket.
+    options:
+      loki_version:
+        type: str
+        default: 3.7.8
+        description: Exact version to install.
+      loki_bind_address:
+        type: str
+        required: true
+        description: Address the HTTP and gRPC servers bind to.
+      loki_http_port:
+        type: int
+        default: 3100
+        description: HTTP port, for pushes, queries and readiness.
+      loki_grpc_port:
+        type: int
+        default: 9096
+        description: gRPC port.
+      loki_bin_dir:
+        type: str
+        default: /usr/local/bin
+        description: Where the binary is installed.
+      loki_user:
+        type: str
+        default: loki
+        description: System user Loki runs as.
+      loki_group:
+        type: str
+        default: loki
+        description: Group Loki runs as.
+      loki_config_dir:
+        type: str
+        default: /etc/loki
+        description: Configuration directory.
+      loki_data_dir:
+        type: str
+        default: /var/lib/loki
+        description: Data directory; holds everything with filesystem storage, the WAL with S3.
+      loki_storage:
+        type: str
+        default: filesystem
+        choices: [filesystem, s3]
+        description: Where chunks and the index are stored.
+      loki_s3_endpoint:
+        type: str
+        default: ""
+        description: S3 endpoint, host and optional port, no scheme.
+      loki_s3_bucket:
+        type: str
+        default: ""
+        description: Bucket name. It must exist.
+      loki_s3_region:
+        type: str
+        default: us-east-1
+        description: Bucket region.
+      loki_s3_access_key:
+        type: str
+        default: ""
+        description: Access key id.
+      loki_s3_secret_key:
+        type: str
+        default: ""
+        description: Secret access key.
+      loki_s3_insecure:
+        type: bool
+        default: false
+        description: Talk plain HTTP to the endpoint.
+      loki_s3_force_path_style:
+        type: bool
+        default: true
+        description: Address the bucket in the path rather than the host name.
+      loki_schema_from:
+        type: str
+        default: "2024-01-01"
+        description: First day of the v13 TSDB schema. Do not change it once data exists.
+      loki_retention_period:
+        type: str
+        default: 744h
+        description: How long logs are kept; the compactor deletes what is older.
+      loki_auth_enabled:
+        type: bool
+        default: false
+        description: Multi-tenancy; when on, every request needs X-Scope-OrgID.
+      loki_extra_config:
+        type: dict
+        default: {}
+        description: Merged into the rendered configuration, recursively, last.

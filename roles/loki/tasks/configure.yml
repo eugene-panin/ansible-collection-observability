@@ -1,0 +1,21 @@
+---
+- name: Render the configuration
+  ansible.builtin.copy:
+    content: "{{ _loki_rendered | to_nice_yaml(indent=2, sort_keys=false) }}"
+    dest: "{{ loki_config_dir }}/loki.yml"
+    owner: root
+    group: "{{ loki_group }}"
+    mode: '0640'
+  no_log: "{{ loki_storage == 's3' }}"
+  notify: "restart loki"
+
+- name: Install the systemd unit
+  ansible.builtin.template:
+    src: loki.service.j2
+    dest: /etc/systemd/system/loki.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - "reload systemd"
+    - "restart loki"

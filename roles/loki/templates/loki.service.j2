@@ -1,0 +1,23 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=Loki
+Documentation=https://grafana.com/docs/loki/latest/
+Wants=network-online.target
+After=network-online.target
+ConditionFileNotEmpty={{ loki_config_dir }}/loki.yml
+
+[Service]
+User={{ loki_user }}
+Group={{ loki_group }}
+ExecStart={{ loki_bin_dir }}/loki -config.file={{ loki_config_dir }}/loki.yml
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths={{ loki_data_dir }}
+
+[Install]
+WantedBy=multi-user.target

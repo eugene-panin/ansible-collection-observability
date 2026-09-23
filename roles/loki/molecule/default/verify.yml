@@ -1,0 +1,33 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Ask the running Loki which version it is
+      ansible.builtin.uri:
+        url: "{{ _loki_test_api }}/loki/api/v1/status/buildinfo"
+        return_content: true
+      register: _loki_test_build
+
+    - name: Assert the upgrade restarted Loki onto the new binary
+      ansible.builtin.assert:
+        that:
+          - _loki_test_build.json.version == '3.7.8'
+        quiet: true
+
+    - name: Push, flush, restart and read back
+      ansible.builtin.include_tasks: tasks/roundtrip.yml
+
+    - name: Find the chunks on disk
+      ansible.builtin.find:
+        paths: /var/lib/loki/chunks
+        recurse: true
+        size: 1
+      register: _loki_test_chunks
+
+    - name: Assert the chunks were written to the filesystem
+      ansible.builtin.assert:
+        that:
+          - _loki_test_chunks.matched > 0
+        quiet: true
