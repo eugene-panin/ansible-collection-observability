@@ -1,0 +1,91 @@
+---
+argument_specs:
+  main:
+    short_description: Run Tempo
+    description:
+      - Installs Tempo through grafana_release, renders its configuration and
+        manages the systemd unit. Monolithic mode, no Kafka.
+      - Receives OTLP over gRPC and HTTP; blocks go to local disk or to an
+        S3-compatible bucket.
+    options:
+      tempo_version:
+        type: str
+        default: 3.0.3
+        description: Exact version to install.
+      tempo_bind_address:
+        type: str
+        required: true
+        description: Address every listener binds to, and the internal components use.
+      tempo_http_port:
+        type: int
+        default: 3200
+        description: HTTP port for queries and readiness.
+      tempo_grpc_port:
+        type: int
+        default: 9097
+        description: gRPC port used between the components in the process.
+      tempo_otlp_grpc_port:
+        type: int
+        default: 4317
+        description: OTLP gRPC receiver port.
+      tempo_otlp_http_port:
+        type: int
+        default: 4318
+        description: OTLP HTTP receiver port.
+      tempo_bin_dir:
+        type: str
+        default: /usr/local/bin
+        description: Where the binary is installed.
+      tempo_user:
+        type: str
+        default: tempo
+        description: System user Tempo runs as.
+      tempo_group:
+        type: str
+        default: tempo
+        description: Group Tempo runs as.
+      tempo_config_dir:
+        type: str
+        default: /etc/tempo
+        description: Configuration directory.
+      tempo_data_dir:
+        type: str
+        default: /var/lib/tempo
+        description: Data directory; every local path Tempo uses lives under it.
+      tempo_storage:
+        type: str
+        default: filesystem
+        choices: [filesystem, s3]
+        description: Where trace blocks are stored.
+      tempo_s3_endpoint:
+        type: str
+        default: ""
+        description: S3 endpoint, host and optional port, no scheme.
+      tempo_s3_bucket:
+        type: str
+        default: ""
+        description: Bucket name. It must exist.
+      tempo_s3_region:
+        type: str
+        default: us-east-1
+        description: Bucket region.
+      tempo_s3_access_key:
+        type: str
+        default: ""
+        description: Access key id.
+      tempo_s3_secret_key:
+        type: str
+        default: ""
+        description: Secret access key.
+      tempo_s3_insecure:
+        type: bool
+        default: false
+        description: Talk plain HTTP to the endpoint.
+      tempo_retention_period:
+        type: str
+        default: 336h
+        description: How long trace blocks are kept.
+      tempo_extra_config:
+        type: dict
+        default: {}
+        description: Merged into the rendered configuration, recursively, last.

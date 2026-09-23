@@ -65,7 +65,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        role: [grafana_release, loki, mimir]
+        role: [grafana_release, loki, mimir, tempo]
         distro: [ubuntu2404, ubuntu2204, debian12]
         ansible_core: [latest]
         include:
@@ -76,6 +76,9 @@ jobs:
             distro: ubuntu2404
             ansible_core: '2.19'
           - role: mimir
+            distro: ubuntu2404
+            ansible_core: '2.19'
+          - role: tempo
             distro: ubuntu2404
             ansible_core: '2.19'
     env:

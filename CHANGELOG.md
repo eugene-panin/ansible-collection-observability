@@ -19,3 +19,7 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   or in an S3-compatible bucket, Prometheus remote write and OTLP in, the
   Prometheus query API out. Points its internal query path at the bind
   address, which Mimir otherwise dials on 127.0.0.1.
+- `tempo` role: Tempo 3 in monolithic mode, OTLP in over gRPC and HTTP, blocks
+  on local disk or in an S3-compatible bucket. Keeps every local path under
+  its data directory and points the querier and the backend worker at the bind
+  address; Tempo 3 otherwise writes to /var/tempo and dials 127.0.0.1.

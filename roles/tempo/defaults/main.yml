@@ -1,0 +1,25 @@
+---
+tempo_version: 3.0.3
+tempo_bind_address: ""
+tempo_http_port: 3200
+tempo_grpc_port: 9097
+tempo_otlp_grpc_port: 4317
+tempo_otlp_http_port: 4318
+
+tempo_bin_dir: /usr/local/bin
+tempo_user: tempo
+tempo_group: tempo
+tempo_config_dir: /etc/tempo
+tempo_data_dir: /var/lib/tempo
+
+tempo_storage: filesystem
+tempo_s3_endpoint: ""
+tempo_s3_bucket: ""
+tempo_s3_region: us-east-1
+tempo_s3_access_key: ""
+tempo_s3_secret_key: ""
+tempo_s3_insecure: false
+
+tempo_retention_period: 336h
+
+tempo_extra_config: {}

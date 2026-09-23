@@ -1,0 +1,33 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Ask the running Tempo which version it is
+      ansible.builtin.uri:
+        url: "{{ _tempo_test_api }}/api/status/buildinfo"
+        return_content: true
+      register: _tempo_test_build
+
+    - name: Assert the upgrade restarted Tempo onto the new binary
+      ansible.builtin.assert:
+        that:
+          - _tempo_test_build.json.version == '3.0.3'
+        quiet: true
+
+    - name: Send, wait for the block, restart and read back
+      ansible.builtin.include_tasks: tasks/roundtrip.yml
+
+    - name: Find the blocks on disk
+      ansible.builtin.find:
+        paths: /var/lib/tempo/blocks
+        patterns: meta.json
+        recurse: true
+      register: _tempo_test_blocks
+
+    - name: Assert blocks were written to local storage
+      ansible.builtin.assert:
+        that:
+          - _tempo_test_blocks.matched > 0
+        quiet: true

@@ -1,0 +1,26 @@
+---
+- name: Validate role inputs
+  ansible.builtin.assert:
+    that:
+      - tempo_bind_address | length > 0
+      - tempo_storage in ['filesystem', 's3']
+      - tempo_storage != 's3' or (tempo_s3_endpoint | length > 0 and tempo_s3_bucket | length > 0)
+    fail_msg: >-
+      tempo_bind_address is required, tempo_storage is filesystem or s3, and s3
+      needs tempo_s3_endpoint and tempo_s3_bucket
+    quiet: true
+
+- name: Install
+  ansible.builtin.include_tasks: install.yml
+  tags: [tempo, install]
+
+- name: Configure
+  ansible.builtin.include_tasks: configure.yml
+  tags: [tempo, config]
+
+- name: Apply pending restarts before talking to Tempo
+  ansible.builtin.meta: flush_handlers
+
+- name: Manage service
+  ansible.builtin.include_tasks: service.yml
+  tags: [tempo, service]

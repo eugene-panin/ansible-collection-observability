@@ -1,0 +1,8 @@
+---
+- name: Upgrade to the next release
+  hosts: all
+  become: true
+  vars:
+    tempo_version: 3.0.3
+  roles:
+    - role: "{{ lookup('ansible.builtin.env', 'MOLECULE_PROJECT_DIRECTORY') }}"

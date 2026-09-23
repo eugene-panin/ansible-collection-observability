@@ -1,0 +1,24 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=Tempo
+Documentation=https://grafana.com/docs/tempo/latest/
+Wants=network-online.target
+After=network-online.target
+ConditionFileNotEmpty={{ tempo_config_dir }}/tempo.yml
+
+[Service]
+User={{ tempo_user }}
+Group={{ tempo_group }}
+WorkingDirectory={{ tempo_data_dir }}
+ExecStart={{ tempo_bin_dir }}/tempo -target=all -config.file={{ tempo_config_dir }}/tempo.yml
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths={{ tempo_data_dir }}
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,95 @@
+---
+- name: Take a timestamp for the test trace
+  ansible.builtin.command:
+    argv:
+      - date
+      - +%s%N
+  register: _tempo_test_now
+  changed_when: false
+
+- name: Name the test trace after the timestamp
+  ansible.builtin.set_fact:
+    _tempo_test_trace: "{{ '%032x' | format(_tempo_test_now.stdout | int) }}"
+    _tempo_test_span: "{{ '%016x' | format(_tempo_test_now.stdout | int % 18446744073709551615) }}"
+
+- name: Send a span to Tempo over OTLP
+  ansible.builtin.uri:
+    url: "http://{{ tempo_bind_address }}:4318/v1/traces"
+    method: POST
+    body_format: json
+    body:
+      resourceSpans:
+        - resource:
+            attributes:
+              - key: service.name
+                value:
+                  stringValue: molecule
+          scopeSpans:
+            - spans:
+                - traceId: "{{ _tempo_test_trace }}"
+                  spanId: "{{ _tempo_test_span }}"
+                  name: roundtrip
+                  kind: 1
+                  startTimeUnixNano: "{{ _tempo_test_now.stdout }}"
+                  endTimeUnixNano: "{{ _tempo_test_now.stdout | int + 1000000 }}"
+    status_code: [200]
+
+- name: Wait until the trace is readable from the block storage
+  ansible.builtin.uri:
+    timeout: 10
+    url: "{{ _tempo_test_api }}/api/traces/{{ _tempo_test_trace }}?mode=blocks"
+    status_code: [200, 404]
+  register: _tempo_test_in_blocks
+  until: _tempo_test_in_blocks.status == 200
+  retries: 60
+  delay: 5
+
+- name: Mark the time of the restart
+  ansible.builtin.command:
+    argv:
+      - date
+      - +%s
+  register: _tempo_test_restart_at
+  changed_when: false
+
+- name: Restart Tempo
+  ansible.builtin.systemd_service:
+    name: tempo
+    state: restarted
+
+- name: Wait until Tempo is ready again
+  ansible.builtin.uri:
+    url: "{{ _tempo_test_api }}/ready"
+  register: _tempo_test_ready
+  until: _tempo_test_ready.status | default(0) == 200
+  retries: 60
+  delay: 2
+
+- name: Read the trace back from block storage after the restart
+  ansible.builtin.uri:
+    timeout: 10
+    url: "{{ _tempo_test_api }}/api/traces/{{ _tempo_test_trace }}?mode=blocks"
+    return_content: true
+  register: _tempo_test_after
+  until: _tempo_test_after.status | default(0) == 200
+  retries: 30
+  delay: 2
+
+- name: Read what Tempo logged since the restart
+  ansible.builtin.command:
+    argv:
+      - journalctl
+      - -u
+      - tempo
+      - --no-pager
+      - --since
+      - "@{{ _tempo_test_restart_at.stdout }}"
+  register: _tempo_test_log
+  changed_when: false
+
+- name: Assert no component tried to reach another over loopback
+  ansible.builtin.assert:
+    that:
+      - _tempo_test_log.stdout is not search('dial tcp 127\\.0\\.0\\.1')
+    fail_msg: a Tempo component dialled 127.0.0.1, which nothing listens on
+    quiet: true

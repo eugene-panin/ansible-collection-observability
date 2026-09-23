@@ -1,0 +1,31 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Send, wait for the block, restart and read back
+      ansible.builtin.include_tasks: ../default/tasks/roundtrip.yml
+
+    - name: List the bucket
+      ansible.builtin.uri:
+        url: http://127.0.0.1:9000/tempo?list-type=2
+        return_content: true
+      register: _tempo_test_bucket
+
+    - name: Assert blocks were written to S3
+      ansible.builtin.assert:
+        that:
+          - _tempo_test_bucket.content is search('<Key>single-tenant/[^<]*meta\.json</Key>')
+        quiet: true
+
+    - name: Look for a local block directory
+      ansible.builtin.stat:
+        path: /var/lib/tempo/blocks
+      register: _tempo_test_local
+
+    - name: Assert nothing went to local block storage
+      ansible.builtin.assert:
+        that:
+          - not _tempo_test_local.stat.exists
+        quiet: true

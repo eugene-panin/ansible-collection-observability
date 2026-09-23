@@ -1,0 +1,54 @@
+---
+dependency:
+  name: galaxy
+  options:
+    requirements-file: molecule/s3/requirements.yml
+driver:
+  name: docker
+platforms:
+  - name: instance-tempo-s3
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-ubuntu2404}-ansible:latest"
+    command: ""
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+    cgroupns_mode: host
+    privileged: true
+    pre_build_image: true
+provisioner:
+  name: ansible
+  config_options:
+    defaults:
+      callback_result_format: yaml
+  inventory:
+    group_vars:
+      all:
+        tempo_bind_address: "{{ ansible_facts['default_ipv4']['address'] }}"
+        _tempo_test_api: "http://{{ ansible_facts['default_ipv4']['address'] }}:3200"
+        tempo_extra_config:
+          storage:
+            trace:
+              blocklist_poll: 5s
+        tempo_storage: s3
+        tempo_s3_endpoint: 127.0.0.1:9000
+        tempo_s3_bucket: tempo
+        tempo_s3_access_key: molecule
+        tempo_s3_secret_key: molecule-secret
+        tempo_s3_insecure: true
+  playbooks:
+    prepare: prepare.yml
+    converge: converge.yml
+    verify: verify.yml
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+    - dependency
+    - syntax
+    - create
+    - prepare
+    - check
+    - converge
+    - idempotence
+    - check
+    - verify
+    - destroy

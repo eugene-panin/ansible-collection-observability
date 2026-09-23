@@ -1,0 +1,63 @@
+---
+_tempo_live: "{{ not (ansible_check_mode and not _tempo_binary_stat.stat.exists | default(false)) }}"
+_tempo_api: "http://{{ tempo_bind_address }}:{{ tempo_http_port }}"
+
+_tempo_storage_filesystem:
+  backend: local
+  wal:
+    path: "{{ tempo_data_dir }}/wal"
+  local:
+    path: "{{ tempo_data_dir }}/blocks"
+
+_tempo_storage_s3:
+  backend: s3
+  wal:
+    path: "{{ tempo_data_dir }}/wal"
+  s3:
+    endpoint: "{{ tempo_s3_endpoint }}"
+    bucket: "{{ tempo_s3_bucket }}"
+    region: "{{ tempo_s3_region }}"
+    access_key: "{{ tempo_s3_access_key }}"
+    secret_key: "{{ tempo_s3_secret_key }}"
+    insecure: "{{ tempo_s3_insecure | bool }}"
+    forcepathstyle: true
+
+_tempo_config:
+  stream_over_http_enabled: true
+  server:
+    http_listen_address: "{{ tempo_bind_address }}"
+    http_listen_port: "{{ tempo_http_port | int }}"
+    grpc_listen_address: "{{ tempo_bind_address }}"
+    grpc_listen_port: "{{ tempo_grpc_port | int }}"
+    log_level: info
+  distributor:
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: "{{ tempo_bind_address }}:{{ tempo_otlp_grpc_port }}"
+          http:
+            endpoint: "{{ tempo_bind_address }}:{{ tempo_otlp_http_port }}"
+  live_store:
+    wal:
+      path: "{{ tempo_data_dir }}/live-store/traces"
+    shutdown_marker_dir: "{{ tempo_data_dir }}/live-store/shutdown-marker"
+  querier:
+    frontend_worker:
+      frontend_address: "{{ tempo_bind_address }}:{{ tempo_grpc_port }}"
+  storage:
+    trace: "{{ _tempo_storage_s3 if tempo_storage == 's3' else _tempo_storage_filesystem }}"
+  backend_scheduler:
+    local_work_path: "{{ tempo_data_dir }}/backend-scheduler"
+    provider:
+      compaction:
+        compaction:
+          block_retention: "{{ tempo_retention_period }}"
+  backend_worker:
+    backend_scheduler_addr: "{{ tempo_bind_address }}:{{ tempo_grpc_port }}"
+    compaction:
+      block_retention: "{{ tempo_retention_period }}"
+  usage_report:
+    reporting_enabled: false
+
+_tempo_rendered: "{{ _tempo_config | combine(tempo_extra_config, recursive=True) }}"
