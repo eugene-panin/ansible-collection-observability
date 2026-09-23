@@ -1,0 +1,84 @@
+---
+argument_specs:
+  main:
+    short_description: Run Grafana wired to Loki, Mimir and Tempo
+    description:
+      - Installs a Grafana release from dl.grafana.com, verified against its
+        published SHA-256, next to earlier ones behind a current link.
+      - Provisions Loki, Mimir and Tempo as linked data sources when their URLs
+        are given, keeps the admin password at the declared value, and turns
+        plugin preinstall and auto-update off.
+    options:
+      grafana_version:
+        type: str
+        default: 13.2.2
+        description: Exact version to install.
+      grafana_bind_address:
+        type: str
+        required: true
+        description: Address the web server binds to.
+      grafana_http_port:
+        type: int
+        default: 3000
+        description: Web server port.
+      grafana_admin_user:
+        type: str
+        default: admin
+        description: Admin login.
+      grafana_admin_password:
+        type: str
+        required: true
+        description: Desired admin password. Enforced on every run.
+      grafana_user:
+        type: str
+        default: grafana
+        description: System user Grafana runs as.
+      grafana_group:
+        type: str
+        default: grafana
+        description: Group Grafana runs as.
+      grafana_install_dir:
+        type: str
+        default: /opt/grafana
+        description: Where releases are unpacked, each in its own directory.
+      grafana_config_dir:
+        type: str
+        default: /etc/grafana
+        description: grafana.ini and provisioning.
+      grafana_data_dir:
+        type: str
+        default: /var/lib/grafana
+        description: Database and installed plugins.
+      grafana_log_dir:
+        type: str
+        default: /var/log/grafana
+        description: Log directory.
+      grafana_download_dir:
+        type: str
+        default: /var/cache/grafana-releases
+        description: Where downloaded archives are kept.
+      grafana_download_base_url:
+        type: str
+        default: https://dl.grafana.com/oss/release
+        description: Release mirror.
+      grafana_loki_url:
+        type: str
+        default: ""
+        description: Loki URL; provisions the loki data source when set.
+      grafana_mimir_url:
+        type: str
+        default: ""
+        description: Mimir's Prometheus API URL, ending in /prometheus; provisions the mimir data source when set.
+      grafana_tempo_url:
+        type: str
+        default: ""
+        description: Tempo URL; provisions the tempo data source when set.
+      grafana_datasources:
+        type: list
+        elements: dict
+        default: []
+        description: Further data sources, in Grafana's provisioning format.
+      grafana_ini:
+        type: dict
+        default: {}
+        description: Merged into grafana.ini, as a dict of sections.
