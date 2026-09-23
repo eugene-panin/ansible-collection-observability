@@ -34,6 +34,16 @@
                   endTimeUnixNano: "{{ _tempo_test_now.stdout | int + 1000000 }}"
     status_code: [200]
 
+- name: Read the trace while it is still in the live store
+  ansible.builtin.uri:
+    url: "{{ _tempo_test_api }}/api/traces/{{ _tempo_test_trace }}"
+    status_code: [200, 404]
+    timeout: 10
+  register: _tempo_test_live
+  until: _tempo_test_live.status == 200
+  retries: 15
+  delay: 2
+
 - name: Wait until the trace is readable from the block storage
   ansible.builtin.uri:
     timeout: 10
@@ -87,9 +97,9 @@
   register: _tempo_test_log
   changed_when: false
 
-- name: Assert no component tried to reach another over loopback
+- name: Assert every component reached the others over gRPC
   ansible.builtin.assert:
     that:
-      - _tempo_test_log.stdout is not search('dial tcp 127\\.0\\.0\\.1')
-    fail_msg: a Tempo component dialled 127.0.0.1, which nothing listens on
+      - _tempo_test_log.stdout is not search('connect. connection refused')
+    fail_msg: a Tempo component dialled an address nothing listens on
     quiet: true

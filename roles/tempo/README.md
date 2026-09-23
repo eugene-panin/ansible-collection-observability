@@ -25,23 +25,22 @@ Recent traces live in the live store and its write-ahead log under
 `tempo_data_dir`. Completed blocks go to `tempo_data_dir/blocks`, or to the
 bucket with `tempo_storage: s3`. The bucket must exist.
 
-Both modes are tested the same way: a span is sent over OTLP, the test waits
-until the trace can be read with `mode=blocks`, which reads nothing but block
+Both modes are tested the same way: a span is sent over OTLP, read back while
+it is still in the live store, then the test waits until the trace can be read with `mode=blocks`, which reads nothing but block
 storage, then Tempo is restarted and the trace is read from block storage
 again. The S3 test also finds the block's `meta.json` in the bucket.
 
 ## Defaults Tempo 3 gets wrong on such a host
 
-Out of the box, Tempo 3 in monolithic mode assumes it may write to
-`/var/tempo` and that its gRPC server listens on `127.0.0.1`. Neither holds for
-a service running as its own user and bound to one address, and the failures
-are quiet: the live store fails and takes ingestion with it, and queries hang.
-The role sets:
+Out of the box, Tempo 3 in monolithic mode writes to `/var/tempo`, and the
+failure is quiet: the live store fails and takes ingestion with it. The role
+puts every local path, including the live store's WAL, its shutdown marker and
+the backend scheduler's work cache, under `tempo_data_dir`.
 
-- every local path, including the live store's WAL, its shutdown marker and
-  the backend scheduler's work cache, under `tempo_data_dir`;
-- the querier's frontend address and the backend worker's scheduler address
-  to the bind address.
+In monolithic mode the components reach each other over gRPC at `127.0.0.1`,
+and for the live store that address is hard-coded, not configurable. So the
+gRPC server listens on `127.0.0.1:tempo_grpc_port`; only the query API and the
+OTLP receivers bind to `tempo_bind_address`.
 
 ## What it does not do
 
@@ -61,7 +60,7 @@ The role sets:
 | `tempo_s3_access_key`, `tempo_s3_secret_key` | `""` | Credentials, from a vault |
 | `tempo_retention_period` | `336h` | How long blocks are kept |
 | `tempo_otlp_grpc_port`, `tempo_otlp_http_port` | `4317`, `4318` | OTLP receivers |
-| `tempo_http_port`, `tempo_grpc_port` | `3200`, `9097` | Query API and internal gRPC |
+| `tempo_http_port`, `tempo_grpc_port` | `3200`, `9097` | Query API; internal gRPC, on 127.0.0.1 |
 | `tempo_extra_config` | `{}` | Merged into the rendered configuration |
 
 ## Notes

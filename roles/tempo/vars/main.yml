@@ -27,7 +27,7 @@ _tempo_config:
   server:
     http_listen_address: "{{ tempo_bind_address }}"
     http_listen_port: "{{ tempo_http_port | int }}"
-    grpc_listen_address: "{{ tempo_bind_address }}"
+    grpc_listen_address: 127.0.0.1
     grpc_listen_port: "{{ tempo_grpc_port | int }}"
     log_level: info
   distributor:
@@ -42,9 +42,6 @@ _tempo_config:
     wal:
       path: "{{ tempo_data_dir }}/live-store/traces"
     shutdown_marker_dir: "{{ tempo_data_dir }}/live-store/shutdown-marker"
-  querier:
-    frontend_worker:
-      frontend_address: "{{ tempo_bind_address }}:{{ tempo_grpc_port }}"
   storage:
     trace: "{{ _tempo_storage_s3 if tempo_storage == 's3' else _tempo_storage_filesystem }}"
   backend_scheduler:
@@ -54,7 +51,6 @@ _tempo_config:
         compaction:
           block_retention: "{{ tempo_retention_period }}"
   backend_worker:
-    backend_scheduler_addr: "{{ tempo_bind_address }}:{{ tempo_grpc_port }}"
     compaction:
       block_retention: "{{ tempo_retention_period }}"
   usage_report:
