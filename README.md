@@ -17,7 +17,7 @@ works just as well pointed at Grafana Cloud or someone else's Loki.
 | [`mimir`](roles/mimir/README.md) | done | Metrics, in one process, on local disk or S3 |
 | [`tempo`](roles/tempo/README.md) | done | Traces, Tempo 3 monolithic, on local disk or S3 |
 | [`grafana`](roles/grafana/README.md) | done | Loki, Mimir and Tempo provisioned as linked data sources |
-| `alloy` | not yet | Agent that collects from a host and ships to the backends |
+| [`alloy`](roles/alloy/README.md) | done | Agent that ships host metrics, the journal and OTLP traces to the backends |
 
 ## Requirements
 

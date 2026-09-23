@@ -1,0 +1,8 @@
+---
+- name: Run the three backends Alloy ships to
+  hosts: all
+  become: true
+  roles:
+    - role: eugene_panin.observability.loki
+    - role: eugene_panin.observability.mimir
+    - role: eugene_panin.observability.tempo

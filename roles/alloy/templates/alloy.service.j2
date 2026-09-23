@@ -1,0 +1,25 @@
+{{ ansible_managed | comment }}
+[Unit]
+Description=Alloy
+Documentation=https://grafana.com/docs/alloy/latest/
+Wants=network-online.target
+After=network-online.target
+ConditionFileNotEmpty={{ alloy_config_dir }}/config.alloy
+
+[Service]
+User={{ alloy_user }}
+Group={{ alloy_group }}
+WorkingDirectory={{ alloy_data_dir }}
+ExecStart={{ alloy_bin_dir }}/alloy run --server.http.listen-addr={{ alloy_http_listen_address }} --storage.path={{ alloy_data_dir }} --disable-reporting {{ alloy_config_dir }}/config.alloy
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+NoNewPrivileges=yes
+ProtectSystem=full
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths={{ alloy_data_dir }}
+
+[Install]
+WantedBy=multi-user.target

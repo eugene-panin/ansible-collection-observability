@@ -21,11 +21,15 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   address, which Mimir otherwise dials on 127.0.0.1.
 - `tempo` role: Tempo 3 in monolithic mode, OTLP in over gRPC and HTTP, blocks
   on local disk or in an S3-compatible bucket. Keeps every local path under
-  its data directory and points the querier and the backend worker at the bind
-  address; Tempo 3 otherwise writes to /var/tempo and dials 127.0.0.1.
+  its data directory; Tempo 3 otherwise writes to /var/tempo. Internal gRPC
+  listens on 127.0.0.1, where Tempo 3 hard-codes the live store's address.
 - `grafana` role: Grafana with Loki, Mimir and Tempo provisioned as data
   sources, linked from logs to traces and back. Releases are unpacked side by
   side behind a `current` link. The admin password is kept at the declared
   value on every run. Plugin preinstall and auto-update are off: with them on,
   Grafana replaced its bundled Prometheus and Tempo plugins from grafana.com at
   startup and the data sources stopped working.
+- `alloy` role: Alloy shipping host metrics to Mimir, the systemd journal to
+  Loki and OTLP traces from local applications to Tempo. Each part is rendered
+  only when its destination is set. The pipeline is checked with `alloy fmt`
+  before it replaces the running one.

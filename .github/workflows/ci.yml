@@ -46,7 +46,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          path: ansible_collections/eugene_panin/hashistack
+          path: ansible_collections/eugene_panin/observability
 
       - uses: actions/setup-python@v5
         with:
@@ -57,7 +57,7 @@ jobs:
 
       - name: ansible-test sanity
         run: ansible-test sanity --docker default --python 3.12
-        working-directory: ansible_collections/eugene_panin/hashistack
+        working-directory: ansible_collections/eugene_panin/observability
 
   molecule:
     name: molecule (${{ matrix.role }}, ${{ matrix.distro }}, ansible-core ${{ matrix.ansible_core }})
@@ -65,7 +65,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        role: [grafana_release, loki, mimir, tempo, grafana]
+        role: [grafana_release, loki, mimir, tempo, grafana, alloy]
         distro: [ubuntu2404, ubuntu2204, debian12]
         ansible_core: [latest]
         include:
@@ -82,6 +82,9 @@ jobs:
             distro: ubuntu2404
             ansible_core: '2.19'
           - role: grafana
+            distro: ubuntu2404
+            ansible_core: '2.19'
+          - role: alloy
             distro: ubuntu2404
             ansible_core: '2.19'
     env:

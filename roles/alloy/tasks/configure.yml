@@ -1,0 +1,21 @@
+---
+- name: Render the pipeline
+  ansible.builtin.template:
+    src: config.alloy.j2
+    dest: "{{ alloy_config_dir }}/config.alloy"
+    owner: root
+    group: "{{ alloy_group }}"
+    mode: '0640'
+    validate: "{{ alloy_bin_dir }}/alloy fmt %s"
+  notify: "restart alloy"
+
+- name: Install the systemd unit
+  ansible.builtin.template:
+    src: alloy.service.j2
+    dest: /etc/systemd/system/alloy.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify:
+    - "reload systemd"
+    - "restart alloy"

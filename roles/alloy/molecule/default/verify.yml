@@ -1,0 +1,104 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Read the running pipeline
+      ansible.builtin.slurp:
+        src: /etc/alloy/config.alloy
+      register: _alloy_test_config
+
+    - name: Assert the rejected pipeline never replaced the working one
+      ansible.builtin.assert:
+        that:
+          - "'this is not alloy syntax' not in _alloy_test_config.content | b64decode"
+        quiet: true
+
+    - name: Read Alloy's own metrics
+      ansible.builtin.uri:
+        url: http://127.0.0.1:12345/metrics
+        return_content: true
+      register: _alloy_test_self
+
+    - name: Assert the upgrade restarted Alloy onto the new release
+      ansible.builtin.assert:
+        that:
+          - _alloy_test_self.content is search('alloy_build_info\{[^}]*version="v1\.19\.2"')
+        quiet: true
+
+    - name: Wait for this host's metrics to arrive in Mimir
+      ansible.builtin.uri:
+        url: "http://{{ _alloy_test_address }}:9009/prometheus/api/v1/query?query={{ 'node_uname_info{instance=\"instance-alloy\"}' | urlencode }}"
+        return_content: true
+        timeout: 10
+      register: _alloy_test_metrics
+      until: _alloy_test_metrics.json.data.result | default([]) | length > 0
+      retries: 30
+      delay: 4
+
+    - name: Take a timestamp for the test log line
+      ansible.builtin.command:
+        argv:
+          - date
+          - +%s%N
+      register: _alloy_test_now
+      changed_when: false
+
+    - name: Write a line to the journal
+      ansible.builtin.command:
+        argv:
+          - logger
+          - -t
+          - molecule
+          - "roundtrip {{ _alloy_test_now.stdout }}"
+      changed_when: false
+
+    - name: Wait for the line to arrive in Loki
+      ansible.builtin.uri:
+        url: "http://{{ _alloy_test_address }}:3100/loki/api/v1/query_range?query={{ _alloy_test_logql | urlencode }}&start={{ _alloy_test_since }}"
+        return_content: true
+        timeout: 10
+      vars:
+        _alloy_test_logql: '{job="systemd-journal", instance="instance-alloy"} |= "roundtrip {{ _alloy_test_now.stdout }}"'
+        _alloy_test_since: "{{ _alloy_test_now.stdout | int - 60000000000 }}"
+      register: _alloy_test_logs
+      until: _alloy_test_logs.json.data.result | default([]) | length > 0
+      retries: 30
+      delay: 4
+
+    - name: Name a test trace after the timestamp
+      ansible.builtin.set_fact:
+        _alloy_test_trace: "{{ '%032x' | format(_alloy_test_now.stdout | int) }}"
+
+    - name: Send a span to Alloy, not to Tempo
+      ansible.builtin.uri:
+        url: http://127.0.0.1:4318/v1/traces
+        method: POST
+        body_format: json
+        body:
+          resourceSpans:
+            - resource:
+                attributes:
+                  - key: service.name
+                    value:
+                      stringValue: molecule
+              scopeSpans:
+                - spans:
+                    - traceId: "{{ _alloy_test_trace }}"
+                      spanId: "{{ '%016x' | format(_alloy_test_now.stdout | int % 18446744073709551615) }}"
+                      name: through-alloy
+                      kind: 1
+                      startTimeUnixNano: "{{ _alloy_test_now.stdout }}"
+                      endTimeUnixNano: "{{ _alloy_test_now.stdout | int + 1000000 }}"
+        status_code: [200]
+
+    - name: Wait for the trace to arrive in Tempo
+      ansible.builtin.uri:
+        url: "http://{{ _alloy_test_address }}:3200/api/traces/{{ _alloy_test_trace }}"
+        status_code: [200, 404]
+        timeout: 10
+      register: _alloy_test_trace_found
+      until: _alloy_test_trace_found.status == 200
+      retries: 30
+      delay: 4

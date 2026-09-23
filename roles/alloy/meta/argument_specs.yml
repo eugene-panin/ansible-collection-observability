@@ -1,0 +1,93 @@
+---
+argument_specs:
+  main:
+    short_description: Run Grafana Alloy on a host
+    description:
+      - Installs Alloy through grafana_release and renders a pipeline shipping
+        host metrics to a Prometheus remote write endpoint, the systemd
+        journal to Loki and OTLP traces to Tempo. Each part is rendered only
+        when its destination is set.
+      - The pipeline is checked with alloy fmt before it replaces the running
+        one.
+    options:
+      alloy_version:
+        type: str
+        default: 1.19.2
+        description: Exact version to install.
+      alloy_http_listen_address:
+        type: str
+        default: 127.0.0.1:12345
+        description: Alloy's own UI and metrics endpoint.
+      alloy_bin_dir:
+        type: str
+        default: /usr/local/bin
+        description: Where the binary is installed.
+      alloy_user:
+        type: str
+        default: alloy
+        description: System user Alloy runs as.
+      alloy_group:
+        type: str
+        default: alloy
+        description: Group Alloy runs as.
+      alloy_extra_groups:
+        type: list
+        elements: str
+        default: [adm, systemd-journal]
+        description: Supplementary groups, for reading logs and the journal.
+      alloy_config_dir:
+        type: str
+        default: /etc/alloy
+        description: Where the pipeline lives.
+      alloy_data_dir:
+        type: str
+        default: /var/lib/alloy
+        description: Alloy's storage path, for write-ahead logs and positions.
+      alloy_instance:
+        type: str
+        default: "{{ inventory_hostname }}"
+        description: Value of the instance label on everything this host ships.
+      alloy_mimir_remote_write_url:
+        type: str
+        default: ""
+        description: Prometheus remote write URL for host metrics.
+      alloy_loki_push_url:
+        type: str
+        default: ""
+        description: Loki push URL for the journal.
+      alloy_tempo_otlp_endpoint:
+        type: str
+        default: ""
+        description: Tempo OTLP gRPC endpoint, host:port, for traces.
+      alloy_tempo_otlp_insecure:
+        type: bool
+        default: true
+        description: Plain gRPC to Tempo.
+      alloy_host_metrics:
+        type: bool
+        default: true
+        description: Ship node exporter metrics when a remote write URL is set.
+      alloy_journal_logs:
+        type: bool
+        default: true
+        description: Ship the journal when a Loki URL is set.
+      alloy_otlp_receiver:
+        type: bool
+        default: true
+        description: Receive OTLP from applications when a Tempo endpoint is set.
+      alloy_otlp_listen_address:
+        type: str
+        default: 127.0.0.1
+        description: Address the OTLP receiver listens on.
+      alloy_otlp_grpc_port:
+        type: int
+        default: 4317
+        description: OTLP gRPC receiver port.
+      alloy_otlp_http_port:
+        type: int
+        default: 4318
+        description: OTLP HTTP receiver port.
+      alloy_extra_config:
+        type: str
+        default: ""
+        description: Appended to the pipeline verbatim.

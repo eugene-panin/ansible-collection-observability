@@ -1,0 +1,15 @@
+---
+- name: Install
+  ansible.builtin.include_tasks: install.yml
+  tags: [alloy, install]
+
+- name: Configure
+  ansible.builtin.include_tasks: configure.yml
+  tags: [alloy, config]
+
+- name: Apply pending restarts before talking to Alloy
+  ansible.builtin.meta: flush_handlers
+
+- name: Manage service
+  ansible.builtin.include_tasks: service.yml
+  tags: [alloy, service]

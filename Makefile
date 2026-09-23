@@ -13,11 +13,11 @@ NAME      := $(shell awk '/^name:/ {print $$2}' galaxy.yml)
 help:
 	@echo "make lint                                yamllint and ansible-lint, production profile"
 	@echo "make sanity                              ansible-test sanity in Docker"
-	@echo "make test ROLE=consul                    every scenario of one role on $(DISTRO)"
-	@echo "make test ROLE=vault SCENARIO='-s guard' one scenario"
-	@echo "make test ROLE=nomad DISTRO=debian12     another distribution"
+	@echo "make test ROLE=loki                      every scenario of one role on $(DISTRO)"
+	@echo "make test ROLE=loki SCENARIO='-s s3'     one scenario"
+	@echo "make test ROLE=mimir DISTRO=debian12     another distribution"
 	@echo "make test-all                            every role with molecule, on $(DISTRO)"
-	@echo "make matrix ROLE=consul                  one role on $(DISTROS)"
+	@echo "make matrix ROLE=tempo                   one role on $(DISTROS)"
 	@echo "roles with scenarios: $(TESTED)"
 
 deps:

@@ -1,0 +1,5 @@
+---
+_alloy_live: "{{ not (ansible_check_mode and not _alloy_binary_stat.stat.exists | default(false)) }}"
+_alloy_metrics: "{{ alloy_host_metrics | bool and alloy_mimir_remote_write_url | length > 0 }}"
+_alloy_logs: "{{ alloy_journal_logs | bool and alloy_loki_push_url | length > 0 }}"
+_alloy_traces: "{{ alloy_otlp_receiver | bool and alloy_tempo_otlp_endpoint | length > 0 }}"

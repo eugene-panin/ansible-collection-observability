@@ -1,0 +1,74 @@
+---
+- name: Check whether alloy is already installed
+  ansible.builtin.stat:
+    path: "{{ alloy_bin_dir }}/alloy"
+  register: _alloy_binary_stat
+  check_mode: false
+
+- name: Ensure the alloy group exists
+  ansible.builtin.group:
+    name: "{{ alloy_group }}"
+    system: true
+    state: present
+
+- name: Ensure the alloy user exists
+  ansible.builtin.user:
+    name: "{{ alloy_user }}"
+    group: "{{ alloy_group }}"
+    system: true
+    groups: "{{ alloy_extra_groups }}"
+    append: true
+    shell: /usr/sbin/nologin
+    home: "{{ alloy_data_dir }}"
+    create_home: false
+    state: present
+
+- name: Refresh the apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_facts['os_family'] == 'Debian'
+  register: _alloy_apt_cache
+  until: _alloy_apt_cache is succeeded
+  retries: 30
+  delay: 10
+  changed_when: false
+  check_mode: false
+
+- name: Ensure unzip is installed
+  ansible.builtin.package:
+    name: unzip
+    state: present
+  register: _alloy_unzip
+  until: _alloy_unzip is succeeded
+  retries: 30
+  delay: 10
+
+- name: Install the alloy binary
+  ansible.builtin.include_role:
+    name: eugene_panin.observability.grafana_release
+  vars:
+    grafana_release_product: alloy
+    grafana_release_version: "{{ alloy_version }}"
+    grafana_release_bin_dir: "{{ alloy_bin_dir }}"
+
+- name: Queue a restart when the binary is about to change
+  ansible.builtin.debug:
+    msg: "alloy {{ alloy_version }}"
+  changed_when: grafana_release_changed | bool
+  notify: "restart alloy"
+
+- name: Ensure the alloy directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ alloy_user }}"
+    group: "{{ alloy_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - path: "{{ alloy_config_dir }}"
+      mode: '0755'
+    - path: "{{ alloy_data_dir }}"
+      mode: '0750'
+  loop_control:
+    label: "{{ item.path }}"

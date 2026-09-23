@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: alloy
+  namespace: eugene_panin
+  author: Evgenii Panin
+  description: Alloy agent shipping host metrics, the systemd journal and OTLP traces
+  license: MIT
+  min_ansible_version: "2.19"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+    - name: Debian
+      versions:
+        - bookworm
+  galaxy_tags:
+    - alloy
+    - agent
+    - grafana
+dependencies: []

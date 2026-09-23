@@ -1,0 +1,86 @@
+{{ ansible_managed | comment('c') }}
+{% if _alloy_metrics %}
+
+prometheus.exporter.unix "host" { }
+
+prometheus.scrape "host" {
+  targets         = prometheus.exporter.unix.host.targets
+  forward_to      = [prometheus.relabel.instance.receiver]
+  scrape_interval = "15s"
+}
+
+prometheus.relabel "instance" {
+  forward_to = [prometheus.remote_write.mimir.receiver]
+
+  rule {
+    target_label = "instance"
+    replacement  = "{{ alloy_instance }}"
+  }
+}
+
+prometheus.remote_write "mimir" {
+  endpoint {
+    url = "{{ alloy_mimir_remote_write_url }}"
+  }
+}
+{% endif %}
+{% if _alloy_logs %}
+
+loki.relabel "journal" {
+  forward_to = []
+
+  rule {
+    target_label = "job"
+    replacement  = "systemd-journal"
+  }
+
+  rule {
+    source_labels = ["__journal__systemd_unit"]
+    target_label  = "unit"
+  }
+}
+
+loki.source.journal "system" {
+  forward_to    = [loki.write.loki.receiver]
+  relabel_rules = loki.relabel.journal.rules
+  labels        = {
+    instance = "{{ alloy_instance }}",
+  }
+}
+
+loki.write "loki" {
+  endpoint {
+    url = "{{ alloy_loki_push_url }}"
+  }
+}
+{% endif %}
+{% if _alloy_traces %}
+
+otelcol.receiver.otlp "apps" {
+  grpc {
+    endpoint = "{{ alloy_otlp_listen_address }}:{{ alloy_otlp_grpc_port }}"
+  }
+
+  http {
+    endpoint = "{{ alloy_otlp_listen_address }}:{{ alloy_otlp_http_port }}"
+  }
+
+  output {
+    traces = [otelcol.exporter.otlp.tempo.input]
+  }
+}
+
+otelcol.exporter.otlp "tempo" {
+  client {
+    endpoint = "{{ alloy_tempo_otlp_endpoint }}"
+
+    tls {
+      insecure = {{ alloy_tempo_otlp_insecure | bool | lower }}
+    }
+  }
+}
+{% endif %}
+{% if alloy_extra_config | length > 0 %}
+
+{{ alloy_extra_config }}
+{% endif %}
