@@ -1,0 +1,21 @@
+---
+galaxy_info:
+  role_name: grafana
+  namespace: eugene_panin
+  author: Evgenii Panin
+  description: Grafana with Loki, Mimir and Tempo provisioned as linked data sources
+  license: MIT
+  min_ansible_version: "2.19"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - jammy
+        - noble
+    - name: Debian
+      versions:
+        - bookworm
+  galaxy_tags:
+    - grafana
+    - dashboards
+    - grafana
+dependencies: []

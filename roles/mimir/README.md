@@ -62,8 +62,7 @@ not listening there.
 
 ## Notes
 
-- Changing `mimir_version` replaces the binary and restarts Mimir; `--check`
-  reports both.
+- Changing `mimir_version` replaces the binary and restarts Mimir.
 - Mimir writes an activity log it reads back on start. The role puts it in
   `mimir_data_dir`; by default Mimir writes it to the working directory, which
   for a service is `/`.

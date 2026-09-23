@@ -1,0 +1,127 @@
+---
+- name: Check which Grafana release is current
+  ansible.builtin.stat:
+    path: "{{ _grafana_current }}"
+  register: _grafana_current_stat
+  check_mode: false
+
+- name: Ensure the grafana group exists
+  ansible.builtin.group:
+    name: "{{ grafana_group }}"
+    system: true
+    state: present
+
+- name: Ensure the grafana user exists
+  ansible.builtin.user:
+    name: "{{ grafana_user }}"
+    group: "{{ grafana_group }}"
+    system: true
+    shell: /usr/sbin/nologin
+    home: "{{ grafana_data_dir }}"
+    create_home: false
+    state: present
+
+- name: Tell whether the wanted release is the current one
+  ansible.builtin.set_fact:
+    grafana_changed: >-
+      {{ not (_grafana_current_stat.stat.exists | default(false)
+              and _grafana_current_stat.stat.lnk_target | default('') | basename == 'grafana-' ~ grafana_version) }}
+
+- name: Queue a restart when the release is about to change
+  ansible.builtin.debug:
+    msg: "grafana {{ grafana_version }}"
+  changed_when: grafana_changed | bool
+  notify: "restart grafana"
+
+- name: Check whether the wanted release is already unpacked
+  ansible.builtin.stat:
+    path: "{{ _grafana_home }}/bin/grafana"
+  register: _grafana_home_stat
+  check_mode: false
+
+- name: Ensure the install and download directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  loop:
+    - "{{ grafana_install_dir }}"
+    - "{{ grafana_download_dir }}"
+
+- name: Fetch the published checksum
+  ansible.builtin.uri:
+    url: "{{ grafana_download_base_url }}/{{ _grafana_archive_name }}.sha256"
+    return_content: true
+  register: _grafana_sum
+  when:
+    - not _grafana_home_stat.stat.exists
+    - not ansible_check_mode
+
+- name: Refuse a release the checksum does not vouch for
+  ansible.builtin.assert:
+    that:
+      - _grafana_sum.content | trim is match('^[0-9a-f]{64}$')
+    fail_msg: "No SHA-256 at {{ grafana_download_base_url }}/{{ _grafana_archive_name }}.sha256"
+    quiet: true
+  when:
+    - not _grafana_home_stat.stat.exists
+    - not ansible_check_mode
+
+- name: Download the release, verified against its checksum
+  ansible.builtin.get_url:
+    url: "{{ grafana_download_base_url }}/{{ _grafana_archive_name }}"
+    dest: "{{ _grafana_archive }}"
+    checksum: "sha256:{{ _grafana_sum.content | trim }}"
+    owner: root
+    group: root
+    mode: '0644'
+    timeout: 120
+  register: _grafana_download
+  until: _grafana_download is succeeded
+  retries: 3
+  delay: 10
+  when:
+    - not _grafana_home_stat.stat.exists
+    - not ansible_check_mode
+
+- name: Unpack the release next to the others
+  ansible.builtin.unarchive:
+    src: "{{ _grafana_archive }}"
+    dest: "{{ grafana_install_dir }}"
+    remote_src: true
+    owner: root
+    group: root
+    creates: "{{ _grafana_home }}/bin/grafana"
+  when: not ansible_check_mode
+
+- name: Point current at the wanted release
+  ansible.builtin.file:
+    src: "{{ _grafana_home }}"
+    dest: "{{ _grafana_current }}"
+    state: link
+    owner: root
+    group: root
+    force: true
+  when: _grafana_home_stat.stat.exists or not ansible_check_mode
+  notify: "restart grafana"
+
+- name: Ensure the grafana directories exist
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: directory
+    owner: "{{ item.owner }}"
+    group: "{{ grafana_group }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - {path: "{{ grafana_config_dir }}", owner: root, mode: '0750'}
+    - {path: "{{ grafana_config_dir }}/provisioning", owner: root, mode: '0750'}
+    - {path: "{{ grafana_config_dir }}/provisioning/datasources", owner: root, mode: '0750'}
+    - {path: "{{ grafana_config_dir }}/provisioning/dashboards", owner: root, mode: '0750'}
+    - {path: "{{ grafana_config_dir }}/provisioning/plugins", owner: root, mode: '0750'}
+    - {path: "{{ grafana_config_dir }}/provisioning/alerting", owner: root, mode: '0750'}
+    - {path: "{{ grafana_data_dir }}", owner: "{{ grafana_user }}", mode: '0750'}
+    - {path: "{{ grafana_log_dir }}", owner: "{{ grafana_user }}", mode: '0750'}
+  loop_control:
+    label: "{{ item.path }}"

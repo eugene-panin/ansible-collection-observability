@@ -1,0 +1,8 @@
+{{ ansible_managed | comment(decoration='; ') }}
+{% for section, values in _grafana_ini_rendered.items() %}
+
+[{{ section }}]
+{% for key, value in values.items() %}
+{{ key }} = {{ value | lower if value is boolean else value }}
+{% endfor %}
+{% endfor %}

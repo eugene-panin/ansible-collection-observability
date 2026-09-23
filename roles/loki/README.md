@@ -60,7 +60,6 @@ storage.
 
 ## Notes
 
-- Changing `loki_version` replaces the binary and restarts Loki; `--check`
-  reports both.
+- Changing `loki_version` replaces the binary and restarts Loki.
 - `loki_schema_from` is the first day of the schema. Leave it alone once data
   exists; a new schema is added, never edited.

@@ -66,5 +66,4 @@ The role sets:
 
 ## Notes
 
-- Changing `tempo_version` replaces the binary and restarts Tempo; `--check`
-  reports both.
+- Changing `tempo_version` replaces the binary and restarts Tempo.

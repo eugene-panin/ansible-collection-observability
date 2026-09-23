@@ -1,0 +1,23 @@
+---
+grafana_version: 13.2.2
+grafana_bind_address: ""
+grafana_http_port: 3000
+
+grafana_admin_user: admin
+grafana_admin_password: ""
+
+grafana_user: grafana
+grafana_group: grafana
+grafana_install_dir: /opt/grafana
+grafana_config_dir: /etc/grafana
+grafana_data_dir: /var/lib/grafana
+grafana_log_dir: /var/log/grafana
+grafana_download_dir: /var/cache/grafana-releases
+grafana_download_base_url: https://dl.grafana.com/oss/release
+
+grafana_loki_url: ""
+grafana_mimir_url: ""
+grafana_tempo_url: ""
+grafana_datasources: []
+
+grafana_ini: {}

@@ -1,0 +1,59 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    _grafana_test_api: "http://{{ _grafana_test_address }}:3000"
+  tasks:
+    - name: Ask the running Grafana which version it is
+      ansible.builtin.uri:
+        url: "{{ _grafana_test_api }}/api/health"
+        return_content: true
+      register: _grafana_test_health
+
+    - name: Assert the upgrade restarted Grafana onto the new release
+      ansible.builtin.assert:
+        that:
+          - _grafana_test_health.json.version == '13.2.2'
+        quiet: true
+
+    - name: Log in with the old admin password
+      ansible.builtin.uri:
+        url: "{{ _grafana_test_api }}/api/user"
+        user: admin
+        password: first-password
+        force_basic_auth: true
+        status_code: [401]
+
+    - name: List the data sources with the new admin password
+      ansible.builtin.uri:
+        url: "{{ _grafana_test_api }}/api/datasources"
+        user: admin
+        password: second-password
+        force_basic_auth: true
+        return_content: true
+      register: _grafana_test_datasources
+
+    - name: Assert exactly the three provisioned data sources exist
+      ansible.builtin.assert:
+        that:
+          - _grafana_test_datasources.json | map(attribute='uid') | sort == ['loki', 'mimir', 'tempo']
+        quiet: true
+
+    - name: Ask Grafana to health-check each data source
+      ansible.builtin.uri:
+        url: "{{ _grafana_test_api }}/api/datasources/uid/{{ item }}/health"
+        user: admin
+        password: second-password
+        force_basic_auth: true
+        return_content: true
+        timeout: 10
+      register: _grafana_test_ds_health
+      until: _grafana_test_ds_health.json.status | default('') == 'OK'
+      retries: 15
+      delay: 4
+      loop:
+        - loki
+        - mimir
+        - tempo

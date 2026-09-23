@@ -1,0 +1,31 @@
+---
+- name: Validate role inputs
+  ansible.builtin.assert:
+    that:
+      - grafana_bind_address | length > 0
+      - grafana_admin_password | length > 0
+      - _grafana_arch | length > 0
+    fail_msg: >-
+      grafana_bind_address and grafana_admin_password are required, and
+      {{ ansible_facts['architecture'] }} must be one of
+      {{ _grafana_arch_map.keys() | list | join(', ') }}
+    quiet: true
+
+- name: Install
+  ansible.builtin.include_tasks: install.yml
+  tags: [grafana, install]
+
+- name: Configure
+  ansible.builtin.include_tasks: configure.yml
+  tags: [grafana, config]
+
+- name: Apply pending restarts before talking to Grafana
+  ansible.builtin.meta: flush_handlers
+
+- name: Manage service
+  ansible.builtin.include_tasks: service.yml
+  tags: [grafana, service]
+
+- name: Converge the admin password
+  ansible.builtin.include_tasks: admin.yml
+  tags: [grafana, admin]

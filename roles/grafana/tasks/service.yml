@@ -1,0 +1,19 @@
+---
+- name: Ensure grafana is enabled and running
+  ansible.builtin.systemd_service:
+    name: grafana
+    enabled: true
+    state: started
+    daemon_reload: true
+  when: _grafana_live | bool
+
+- name: Wait until Grafana and its database are healthy
+  ansible.builtin.uri:
+    url: "{{ _grafana_api }}/api/health"
+    return_content: true
+  register: _grafana_health
+  until: _grafana_health.json.database | default('') == 'ok'
+  retries: 60
+  delay: 2
+  when: _grafana_live | bool
+  check_mode: false

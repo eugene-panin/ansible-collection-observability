@@ -1,0 +1,32 @@
+---
+- name: Try the admin password
+  ansible.builtin.uri:
+    url: "{{ _grafana_api }}/api/user"
+    user: "{{ grafana_admin_user }}"
+    password: "{{ grafana_admin_password }}"
+    force_basic_auth: true
+    status_code: [200, 401]
+  register: _grafana_login
+  when: _grafana_live | bool
+  check_mode: false
+  no_log: true
+
+- name: Reset the admin password to the declared one
+  ansible.builtin.command:
+    argv:
+      - "{{ _grafana_current }}/bin/grafana"
+      - cli
+      - --homepath
+      - "{{ _grafana_current }}"
+      - --config
+      - "{{ grafana_config_dir }}/grafana.ini"
+      - admin
+      - reset-admin-password
+      - "{{ grafana_admin_password }}"
+  become: true
+  become_user: "{{ grafana_user }}"
+  when:
+    - _grafana_live | bool
+    - _grafana_login.status | default(200) == 401
+  changed_when: true
+  no_log: true

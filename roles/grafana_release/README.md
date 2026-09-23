@@ -41,5 +41,5 @@ Architectures: `x86_64` and `aarch64`. `unzip` must be on the host.
 ## What the calling role gets back
 
 `grafana_release_changed` is true when the installed version differs from the
-wanted one. It is set before anything is downloaded, so `--check` reports it
-too; restart the service on it.
+wanted one. It is set before anything is downloaded; restart the service on
+it.

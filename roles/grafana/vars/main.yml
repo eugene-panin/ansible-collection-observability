@@ -1,0 +1,80 @@
+---
+_grafana_arch_map:
+  x86_64: amd64
+  aarch64: arm64
+_grafana_arch: "{{ _grafana_arch_map[ansible_facts['architecture']] | default('') }}"
+
+_grafana_live: "{{ not (ansible_check_mode and not _grafana_current_stat.stat.exists | default(false)) }}"
+_grafana_api: "http://{{ grafana_bind_address }}:{{ grafana_http_port }}"
+
+_grafana_archive_name: "grafana-{{ grafana_version }}.linux-{{ _grafana_arch }}.tar.gz"
+_grafana_archive: "{{ grafana_download_dir }}/{{ _grafana_archive_name }}"
+_grafana_home: "{{ grafana_install_dir }}/grafana-{{ grafana_version }}"
+_grafana_current: "{{ grafana_install_dir }}/current"
+
+_grafana_ini_base:
+  paths:
+    data: "{{ grafana_data_dir }}"
+    logs: "{{ grafana_log_dir }}"
+    plugins: "{{ grafana_data_dir }}/plugins"
+    bundled_plugins: "{{ _grafana_current }}/data/plugins-bundled"
+    provisioning: "{{ grafana_config_dir }}/provisioning"
+  server:
+    http_addr: "{{ grafana_bind_address }}"
+    http_port: "{{ grafana_http_port }}"
+  security:
+    admin_user: "{{ grafana_admin_user }}"
+    admin_password: "{{ grafana_admin_password }}"
+    disable_gravatar: true
+  analytics:
+    reporting_enabled: false
+    check_for_updates: false
+    check_for_plugin_updates: false
+  plugins:
+    preinstall_disabled: true
+    preinstall_auto_update: false
+  users:
+    allow_sign_up: false
+  auth.anonymous:
+    enabled: false
+
+_grafana_ini_rendered: "{{ _grafana_ini_base | combine(grafana_ini, recursive=True) }}"
+
+_grafana_ds_loki:
+  name: Loki
+  type: loki
+  uid: loki
+  access: proxy
+  url: "{{ grafana_loki_url }}"
+  jsonData: >-
+    {{ {'derivedFields': [{'name': 'TraceID', 'datasourceUid': 'tempo',
+                           'matcherRegex': 'trace_?[Ii][Dd]["=:\s]+(\w+)', 'url': '$${__value.raw}'}]}
+       if grafana_tempo_url | length > 0 else {} }}
+
+_grafana_ds_mimir:
+  name: Mimir
+  type: prometheus
+  uid: mimir
+  access: proxy
+  url: "{{ grafana_mimir_url }}"
+  isDefault: true
+  jsonData:
+    prometheusType: Mimir
+    httpMethod: POST
+
+_grafana_ds_tempo:
+  name: Tempo
+  type: tempo
+  uid: tempo
+  access: proxy
+  url: "{{ grafana_tempo_url }}"
+  jsonData: >-
+    {{ ({'tracesToLogsV2': {'datasourceUid': 'loki', 'filterByTraceID': true}}
+        if grafana_loki_url | length > 0 else {})
+       | combine({'serviceMap': {'datasourceUid': 'mimir'}} if grafana_mimir_url | length > 0 else {}) }}
+
+_grafana_datasources_all: >-
+  {{ ([_grafana_ds_loki] if grafana_loki_url | length > 0 else [])
+     + ([_grafana_ds_mimir] if grafana_mimir_url | length > 0 else [])
+     + ([_grafana_ds_tempo] if grafana_tempo_url | length > 0 else [])
+     + grafana_datasources }}

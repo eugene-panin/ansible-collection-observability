@@ -74,6 +74,11 @@
     owner: root
     group: root
     mode: '0644'
+    timeout: 120
+  register: _grafana_release_download_result
+  until: _grafana_release_download_result is succeeded
+  retries: 3
+  delay: 10
   when:
     - not _grafana_release_present | bool
     - not ansible_check_mode
