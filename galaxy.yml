@@ -1,7 +1,7 @@
 ---
 namespace: eugene_panin
 name: observability
-version: 0.1.0
+version: 0.1.1
 readme: README.md
 authors:
   - Evgenii Panin <e.panin@gmail.com>
@@ -26,3 +26,4 @@ build_ignore:
   - .ansible-lint
   - .yamllint
   - Makefile
+  - roles/*/molecule

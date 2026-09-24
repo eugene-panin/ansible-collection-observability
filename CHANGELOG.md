@@ -3,7 +3,7 @@
 All notable changes to this collection are documented here.
 This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.1] - 2026-09-24
 
 ### Fixed
 
@@ -12,6 +12,11 @@ This project adheres to [Semantic Versioning](https://semver.org/).
   the backend roles by FQCN. The message of commit 40d166f blames
   ansible-lint 26.9 for it; that is wrong, 26.8 fails the same way on a clean
   home directory.
+
+### Changed
+
+- The Molecule scenarios are no longer shipped in the Galaxy artifact.
+- CI actions moved off Node 20: checkout v5, setup-python v6, upload-artifact v6.
 
 ## [0.1.0] - 2026-09-24
 
