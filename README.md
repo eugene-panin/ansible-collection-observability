@@ -1,5 +1,9 @@
 # eugene_panin.observability
 
+[![CI](https://github.com/eugene-panin/ansible-collection-observability/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/eugene-panin/ansible-collection-observability/actions/workflows/ci.yml)
+[![Galaxy](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fgalaxy.ansible.com%2Fapi%2Fv3%2Fplugin%2Fansible%2Fcontent%2Fpublished%2Fcollections%2Findex%2Feugene_panin%2Fobservability%2F&query=%24.highest_version.version&label=galaxy&color=blue&cacheSeconds=3600)](https://galaxy.ansible.com/ui/repo/published/eugene_panin/observability/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 Alloy, Loki, Mimir, Tempo and Grafana on plain hosts with systemd.
 
 Which role goes on which host is the playbook's business: Alloy on every host
