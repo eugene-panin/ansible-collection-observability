@@ -29,6 +29,22 @@ works just as well pointed at Grafana Cloud or someone else's Loki.
 - `community.general` >= 10.0.0, pulled in automatically
 - Ubuntu 22.04, Ubuntu 24.04 or Debian 12 with systemd
 
+## Install
+
+From [Galaxy](https://galaxy.ansible.com/ui/repo/published/eugene_panin/observability/):
+
+```bash
+ansible-galaxy collection install eugene_panin.observability
+```
+
+Or pinned in `requirements.yml`:
+
+```yaml
+collections:
+  - name: eugene_panin.observability
+    version: 0.1.1
+```
+
 ## Development
 
 ```bash
